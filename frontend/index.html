@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Concert Tracker</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 760px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      background: #14151a;
+      color: #e8e8ea;
+    }
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; color: #b9b9c2; }
+    form { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    input, select {
+      flex: 1; padding: .55rem .7rem; border-radius: 8px;
+      border: 1px solid #33343d; background: #1d1e25; color: inherit;
+    }
+    select { flex: 0; font-size: .85rem; }
+    button {
+      padding: .55rem .9rem; border-radius: 8px; border: 0;
+      background: #5b6cff; color: white; cursor: pointer; font-weight: 600;
+    }
+    button.ghost { background: #2a2b33; color: #c7c7cf; }
+    ul { list-style: none; padding: 0; }
+    li {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .6rem .75rem; border: 1px solid #2a2b33;
+      border-radius: 10px; margin-bottom: .5rem; background: #1a1b21;
+    }
+    .grow { flex: 1; }
+    .muted { color: #8c8c98; font-size: .85rem; }
+    .badge {
+      font-size: .68rem; font-weight: 700; letter-spacing: .03em;
+      background: #1f7a4d; color: #d9ffe9; padding: .15rem .4rem; border-radius: 6px;
+    }
+    a { color: #8fa2ff; }
+  </style>
+</head>
+<body>
+  <h1>🎟️ Artists I want to see</h1>
+
+  <form id="add-form">
+    <input id="artist-input" placeholder="Artist name (e.g. Rammstein)" autocomplete="off" />
+    <button type="submit">Track</button>
+  </form>
+
+  <h2>Tracked artists</h2>
+  <ul id="artists"></ul>
+
+  <h2>
+    Upcoming concerts
+    <span style="float:right; display:flex; gap:.5rem">
+      <select id="city-filter"><option value="">All cities</option></select>
+      <button class="ghost" id="refresh">Refresh now</button>
+    </span>
+  </h2>
+  <ul id="events"></ul>
+
+  <script>
+    const api = (path, opts) => fetch("/api" + path, opts).then(r => r.json());
+
+    async function loadArtists() {
+      const artists = await api("/artists");
+      const ul = document.getElementById("artists");
+      ul.innerHTML = "";
+      for (const a of artists) {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span class="grow">${a.name}</span>
+          <span class="muted">${a.event_count} concerts</span>
+          <button class="ghost" data-id="${a.id}">Remove</button>`;
+        li.querySelector("button").onclick = async () => {
+          await api(`/artists/${a.id}`, { method: "DELETE" });
+          refresh();
+        };
+        ul.appendChild(li);
+      }
+    }
+
+    async function loadCities() {
+      const select = document.getElementById("city-filter");
+      const current = select.value;
+      const cities = await api("/cities");
+      select.innerHTML = '<option value="">All cities</option>' +
+        cities.map(c => `<option value="${c}">${c}</option>`).join("");
+      select.value = cities.includes(current) ? current : "";
+    }
+
+    async function loadEvents() {
+      const city = document.getElementById("city-filter").value;
+      const events = await api("/events" + (city ? `?city=${encodeURIComponent(city)}` : ""));
+      const ul = document.getElementById("events");
+      ul.innerHTML = events.length ? "" : `<li class="muted">No concerts yet.</li>`;
+      for (const e of events) {
+        const when = e.start_date ? new Date(e.start_date).toLocaleString("de-DE",
+          { dateStyle: "medium", timeStyle: "short" }) : "date TBA";
+        const where = [e.venue, e.city].filter(Boolean).join(", ");
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${e.is_new ? '<span class="badge">NEW</span>' : ""}
+          <span class="grow">
+            <strong>${e.artist}</strong> &middot; ${when}
+            <div class="muted">${where || ""}</div>
+          </span>
+          ${e.link ? `<a href="${e.link}" target="_blank" rel="noopener">Tickets</a>` : ""}`;
+        ul.appendChild(li);
+      }
+    }
+
+    const refresh = () => Promise.all([loadArtists(), loadCities(), loadEvents()]);
+
+    document.getElementById("city-filter").onchange = loadEvents;
+
+    document.getElementById("add-form").onsubmit = async (ev) => {
+      ev.preventDefault();
+      const input = document.getElementById("artist-input");
+      const name = input.value.trim();
+      if (!name) return;
+      input.value = "";
+      await api("/artists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      refresh();
+    };
+
+    document.getElementById("refresh").onclick = async () => {
+      await api("/scrape", { method: "POST" });
+      refresh();
+    };
+
+    refresh();
+  </script>
+</body>
+</html>

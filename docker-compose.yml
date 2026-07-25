@@ -1,0 +1,13 @@
+services:
+  concert-tracker:
+    build: .
+    restart: unless-stopped
+    environment:
+      - DATABASE_PATH=/data/tracker.db
+    volumes:
+      - concert-data:/data       # persists the SQLite DB across redeploys
+    ports:
+      - "8000:8000"              # Coolify puts its reverse proxy (domain + SSL) in front of this
+
+volumes:
+  concert-data:

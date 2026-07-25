@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+httpx
+apscheduler
+playwright==1.61.0
