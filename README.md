@@ -1,4 +1,4 @@
-# Concert Tracker
+# Frontrow
 
 Track artists you want to see live. A background job polls Eventim every 12 hours
 and surfaces new concerts for the artists on your list.
