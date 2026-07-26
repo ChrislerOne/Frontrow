@@ -53,14 +53,23 @@ def test_remove_artist(client):
     assert client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json() == []
 
 
-def test_mark_seen_clears_new_for_that_user_only(client):
+def test_attending_toggle_is_per_user(client):
     lid = default_list(client, "a@x.com")["id"]
     client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
     evs = client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()
     pid = evs[0]["product_id"]
-    assert client.post("/api/events/seen", json={"product_id": pid}, headers=H("a@x.com")).status_code == 200
+    assert all(e["attending"] is False for e in evs)
+    assert client.post("/api/events/attending", json={"product_id": pid, "attending": True}, headers=H("a@x.com")).status_code == 200
     after = client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()
-    assert {e["product_id"]: e["is_new"] for e in after}[pid] is False
+    assert {e["product_id"]: e["attending"] for e in after}[pid] is True
+    # a different user is unaffected, and toggling off works
+    default_list(client, "b@x.com")
+    client.post(f"/api/lists/{lid}/invites", json={"email": "b@x.com", "role": "viewer"}, headers=H("a@x.com"))
+    b_evs = client.get(f"/api/lists/{lid}/events", headers=H("b@x.com")).json()
+    assert {e["product_id"]: e["attending"] for e in b_evs}[pid] is False
+    client.post("/api/events/attending", json={"product_id": pid, "attending": False}, headers=H("a@x.com"))
+    a_evs = client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()
+    assert {e["product_id"]: e["attending"] for e in a_evs}[pid] is False
 
 
 # ── permissions ──────────────────────────────────────────────────────────────

@@ -161,3 +161,15 @@ class ArtistSuggestion(Base):
     image: Mapped[str | None] = mapped_column(String, nullable=True)
     source: Mapped[str] = mapped_column(String, default="deezer")
     added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class EventAttending(Base):
+    """Per-user 'I'm going / have a ticket' marker, keyed by the stable product_id."""
+
+    __tablename__ = "event_attending"
+    __table_args__ = (UniqueConstraint("user_id", "product_id", name="uq_user_product_att"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    product_id: Mapped[str] = mapped_column(String, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

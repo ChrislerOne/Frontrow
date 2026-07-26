@@ -1,5 +1,6 @@
 import secrets
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +13,7 @@ from .auth import current_user, require_edit, require_owner, require_view, role_
 from .database import Base, engine, get_db
 from .artist_search import deezer_search
 from .models import (
-    Artist, ArtistList, ArtistSuggestion, Event, EventSeen, ListArtist, ListInvite,
+    Artist, ArtistList, ArtistSuggestion, Event, EventAttending, ListArtist, ListInvite,
     ListMember, ShareLink, User,
 )
 from .scheduler import start_scheduler
@@ -44,8 +45,9 @@ class JoinIn(BaseModel):
     token: str
 
 
-class SeenIn(BaseModel):
+class AttendIn(BaseModel):
     product_id: str
+    attending: bool = True
 
 
 class InviteIn(BaseModel):
@@ -58,7 +60,7 @@ def _naive(dt):
     return dt.replace(tzinfo=None) if (dt and dt.tzinfo) else dt
 
 
-def _event_dict(e: Event, is_new: bool) -> dict:
+def _event_dict(e: Event, is_new: bool, attending: bool = False) -> dict:
     return {
         "id": e.id,
         "product_id": e.product_id,
@@ -69,28 +71,28 @@ def _event_dict(e: Event, is_new: bool) -> dict:
         "venue": e.venue,
         "link": e.link,
         "is_new": is_new,
+        "attending": attending,
     }
 
 
 def _list_events(db: Session, lst: ArtistList, user: User | None) -> list[dict]:
-    """Events for every artist in the list. `is_new` is per-user: a show is new if
-    it was first seen after the user added that artist and they haven't marked it
-    seen. Anonymous (public share) callers get is_new=False."""
+    """Events for every artist in the list. `is_new` means recently announced (first
+    seen in the last 14 days); `attending` is the current user's per-show flag.
+    Anonymous (public share) callers get attending=False."""
     added_by_artist = {la.artist_id: _naive(la.added_at) for la in lst.artists_assoc}
     artist_ids = list(added_by_artist)
     if not artist_ids:
         return []
     events = db.query(Event).filter(Event.artist_id.in_(artist_ids)).all()
-    seen: set[str] = set()
+    attending: set[str] = set()
     if user is not None:
-        seen = {s.product_id for s in db.query(EventSeen).filter(EventSeen.user_id == user.id)}
+        attending = {a.product_id for a in db.query(EventAttending).filter(EventAttending.user_id == user.id)}
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=14)
     out = []
     for e in events:
-        is_new = False
-        if user is not None:
-            fs, added = _naive(e.first_seen_at), added_by_artist.get(e.artist_id)
-            is_new = e.product_id not in seen and bool(fs and added and fs >= added)
-        out.append(_event_dict(e, is_new))
+        fs = _naive(e.first_seen_at)
+        is_new = bool(fs and fs >= cutoff)
+        out.append(_event_dict(e, is_new, e.product_id in attending))
     out.sort(key=lambda d: (d["start_date"] is None, d["start_date"] or ""))
     return out
 
@@ -371,12 +373,16 @@ def shared_view(token: str, db: Session = Depends(get_db)):
 
 
 # ── events / scrape ──────────────────────────────────────────────────────────
-@app.post("/api/events/seen")
-def mark_seen(payload: SeenIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    if not db.query(EventSeen).filter_by(user_id=user.id, product_id=payload.product_id).first():
-        db.add(EventSeen(user_id=user.id, product_id=payload.product_id))
+@app.post("/api/events/attending")
+def set_attending(payload: AttendIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    row = db.query(EventAttending).filter_by(user_id=user.id, product_id=payload.product_id).first()
+    if payload.attending and not row:
+        db.add(EventAttending(user_id=user.id, product_id=payload.product_id))
         db.commit()
-    return {"product_id": payload.product_id, "is_new": False}
+    elif not payload.attending and row:
+        db.delete(row)
+        db.commit()
+    return {"product_id": payload.product_id, "attending": payload.attending}
 
 
 @app.get("/api/artists/search")

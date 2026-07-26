@@ -59,7 +59,8 @@
 
     .fr-card{position:relative;overflow:hidden;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;transition:transform .18s ease, box-shadow .18s ease, opacity .3s ease}
     @media (hover:hover){.fr-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}}
-    .fr-card.is-seen{opacity:.62}
+    .fr-card.is-attending{box-shadow:0 0 0 1.5px var(--color-accent), 0 8px 20px rgba(0,0,0,.45)}
+    .fr-card.is-attending:hover{box-shadow:0 0 0 1.5px var(--color-accent), 0 10px 24px rgba(0,0,0,.55)}
     .fr-card-main{padding:16.8px 16.8px 11.2px;display:flex;flex-direction:column;gap:5.6px;flex:1}
     .fr-kicker-row{display:flex;align-items:baseline;gap:8.4px}
     .fr-kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -74,6 +75,25 @@
     .fr-group-count{font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);flex:none}
     .fr-group-next{margin-left:auto;font-family:var(--fr-mono);font-size:10px;letter-spacing:.1em;color:color-mix(in srgb, var(--color-text) 42%, transparent);flex:none}
     .fr-group-body{padding-top:8.4px}
+    .fr-going-line{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--color-accent)}
+    .fr-chips{display:flex;gap:5.6px;flex-wrap:wrap}
+    .fr-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;border:1px solid var(--color-divider);background:transparent;color:color-mix(in srgb,var(--color-text) 70%,transparent);cursor:pointer;font:inherit;font-size:12.5px}
+    .fr-chip:hover{background:color-mix(in srgb,var(--color-text) 6%,transparent)}
+    .fr-chip.active{border-color:var(--color-accent);color:var(--color-accent);background:color-mix(in srgb,var(--color-accent) 10%,transparent)}
+    .fr-chip span{font-family:var(--fr-mono);font-size:10px;opacity:.8}
+    .fr-cal-head{display:flex;align-items:center;gap:8.4px;margin-bottom:11.2px}
+    .fr-cal-title{font-family:var(--font-heading);font-weight:500;font-size:18px;margin-right:auto}
+    .fr-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5.6px}
+    .fr-cal-dow{font-family:var(--fr-mono);font-size:10px;letter-spacing:.1em;color:color-mix(in srgb,var(--color-text) 45%,transparent);text-align:center;padding-bottom:2px}
+    .fr-cal-cell{min-height:84px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-sm);padding:5px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+    .fr-cal-cell.empty{background:transparent;box-shadow:none}
+    .fr-cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--color-accent)}
+    .fr-cal-day{font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent)}
+    .fr-cal-ev{display:block;font-size:11px;line-height:1.3;padding:2px 5px;border-radius:5px;background:color-mix(in srgb,var(--color-text) 8%,transparent);color:var(--color-text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fr-cal-ev:hover{background:color-mix(in srgb,var(--color-text) 15%,transparent)}
+    .fr-cal-ev.att{background:color-mix(in srgb,var(--color-accent) 24%,transparent);color:var(--color-text)}
+    .fr-cal-tba{display:flex;align-items:center;gap:8.4px;flex-wrap:wrap;margin-top:11.2px}
+    @media(max-width:560px){.fr-cal-cell{min-height:62px}.fr-cal-ev{font-size:10px;padding:1px 4px}}
     .fr-perf{position:relative;height:1px;background:repeating-linear-gradient(to right, var(--color-divider) 0 5px, transparent 5px 11px)}
     .fr-perf::before,.fr-perf::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--color-bg)}
     .fr-perf::before{left:-7px}.fr-perf::after{right:-7px}
@@ -183,15 +203,19 @@
         <main class="fr-main">
           <div class="fr-toolbar">
             <h6 style="margin:0;margin-right:auto">Upcoming concerts</h6>
-            <span class="fr-mono-note">CHECKED EVERY 12 H</span>
+            <div class="seg" id="view-seg" style="flex:none">
+              <label class="seg-opt"><input type="radio" name="fr-view" value="list" checked /><i class="ph ph-rows"></i><span>List</span></label>
+              <label class="seg-opt"><input type="radio" name="fr-view" value="calendar" /><i class="ph ph-calendar-blank"></i><span>Calendar</span></label>
+            </div>
             <button class="btn btn-ghost" id="btn-refresh-2"><i class="ph ph-arrows-clockwise"></i> Refresh now</button>
           </div>
           <div style="display:flex;gap:8.4px;align-items:center;flex-wrap:wrap">
-            <div class="seg" style="flex:none">
-              <label class="seg-opt"><input type="radio" name="fr-tab" value="all" checked /><span>All <span id="count-all">0</span></span></label>
-              <label class="seg-opt"><input type="radio" name="fr-tab" value="new" /><span>New <span id="count-new">0</span></span></label>
+            <div class="fr-chips" id="chips">
+              <button type="button" class="fr-chip active" data-quick="all">All <span data-c="all">0</span></button>
+              <button type="button" class="fr-chip" data-quick="new">New <span data-c="new">0</span></button>
+              <button type="button" class="fr-chip" data-quick="attending"><i class="ph ph-star"></i> Attending <span data-c="attending">0</span></button>
             </div>
-            <div style="position:relative;flex:none">
+            <div style="position:relative;flex:none;margin-left:auto">
               <button class="btn btn-secondary" id="btn-filter" aria-expanded="false" style="min-height:36px">
                 <i class="ph ph-map-pin" style="font-size:15px"></i> <span id="filter-label">All cities</span> <i class="ph ph-caret-down" style="font-size:11px;opacity:.65"></i>
               </button>
@@ -267,8 +291,10 @@
 
     const state = {
       me: null, lists: [], currentId: null, detail: null,
-      events: [], tab: "all", cityFilter: new Set(), loading: true,
+      events: [], quick: "all", view: "list", calMonth: null, cityFilter: new Set(), loading: true,
     };
+    const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     const expandedArtists = new Set();
     const canEdit = () => !!(state.detail && state.detail.can_edit);
     const isOwner = () => !!(state.detail && state.detail.role === "owner");
@@ -456,23 +482,38 @@
       box.querySelectorAll(".fr-rm").forEach(b => b.onclick = () => removeArtist(+b.dataset.id, b.dataset.name));
     }
 
-    const inCity = () => state.cityFilter.size ? state.events.filter(e => e.city && state.cityFilter.has(e.city)) : state.events;
+    const cityFiltered = () => state.cityFilter.size ? state.events.filter(e => e.city && state.cityFilter.has(e.city)) : state.events;
+    function quickFiltered() {
+      let ev = cityFiltered();
+      if (state.quick === "new") ev = ev.filter(e => e.is_new);
+      else if (state.quick === "attending") ev = ev.filter(e => e.attending);
+      return ev;
+    }
+    function syncChips() {
+      document.querySelectorAll("#chips .fr-chip").forEach(c => c.classList.toggle("active", c.dataset.quick === state.quick));
+    }
 
     function renderConcerts() {
-      const evs = inCity();
-      $("#count-all").textContent = evs.length;
-      $("#count-new").textContent = evs.filter(e => e.is_new).length;
+      const base = cityFiltered();
+      const setC = (k, v) => { const el = document.querySelector(`#chips [data-c="${k}"]`); if (el) el.textContent = v; };
+      setC("all", base.length);
+      setC("new", base.filter(e => e.is_new).length);
+      setC("attending", base.filter(e => e.attending).length);
+
       const box = $("#concerts");
       if (state.loading) { box.innerHTML = `<div class="fr-grid">${Array.from({length:4}).map(()=>`<div class="fr-skel" style="height:150px"></div>`).join("")}</div>`; return; }
-      const list = state.tab === "new" ? evs.filter(e => e.is_new) : evs;
       if (!state.events.length) {
-        box.innerHTML = `<div class="fr-empty"><i class="ph ph-binoculars"></i><span class="h">Nothing announced yet</span><span class="text-muted" style="font-size:14px;max-width:44ch">Frontrow is watching ${state.detail?state.detail.artists.length:0} artist(s). New shows land here with a NEW stamp.</span><button class="btn btn-secondary" id="empty-refresh"><i class="ph ph-arrows-clockwise"></i> Check again now</button></div>`;
+        box.innerHTML = `<div class="fr-empty"><i class="ph ph-binoculars"></i><span class="h">Nothing announced yet</span><span class="text-muted" style="font-size:14px;max-width:44ch">Frontrow is watching ${state.detail?state.detail.artists.length:0} artist(s). New shows land here as soon as they're announced.</span><button class="btn btn-secondary" id="empty-refresh"><i class="ph ph-arrows-clockwise"></i> Check again now</button></div>`;
         $("#empty-refresh").onclick = refresh; return;
       }
+      const list = quickFiltered();
       if (!list.length) {
-        box.innerHTML = `<div class="fr-empty"><i class="ph ph-funnel"></i><span class="h">No shows match this filter</span><span class="text-muted" style="font-size:14px">${state.tab==="new"?"Nothing new here right now.":"Try a different city or clear the filter."}</span><button class="btn btn-primary" id="empty-clear"><i class="ph ph-x"></i> Clear filter</button></div>`;
-        $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.tab = "all"; setTab("all"); renderConcerts(); renderFilterButton(); }; return;
+        const msg = state.quick === "attending" ? "You haven't marked any shows as attending yet." : state.quick === "new" ? "Nothing new right now." : "Try a different city.";
+        box.innerHTML = `<div class="fr-empty"><i class="ph ph-funnel"></i><span class="h">No shows match this filter</span><span class="text-muted" style="font-size:14px">${msg}</span><button class="btn btn-primary" id="empty-clear"><i class="ph ph-x"></i> Show all</button></div>`;
+        $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.quick = "all"; syncChips(); renderConcerts(); renderFilterButton(); }; return;
       }
+
+      if (state.view === "calendar") { renderCalendar(box, list); return; }
 
       // group by artist, sorted by each artist's next show
       const groups = new Map();
@@ -489,11 +530,12 @@
 
       box.innerHTML = groupArr.map(g => {
         const open = expandedArtists.has(g.artist);
+        const going = g.events.filter(e => e.attending).length;
         return `<div class="fr-group">
           <button class="fr-group-head" data-artist="${esc(g.artist)}" aria-expanded="${open}">
             <i class="ph ph-caret-${open ? "down" : "right"}"></i>
             <span class="fr-group-name">${esc(g.artist)}</span>
-            <span class="fr-group-count">${g.events.length} show${g.events.length === 1 ? "" : "s"}</span>
+            <span class="fr-group-count">${g.events.length} show${g.events.length === 1 ? "" : "s"}${going ? " · " + going + " going" : ""}</span>
             <span class="fr-group-next">${g.next ? "NEXT · " + esc(shortDate(g.next)) : "DATE TBA"}</span>
           </button>
           <div class="fr-group-body" ${open ? "" : "hidden"}><div class="fr-grid">${g.events.map(cardHTML).join("")}</div></div>
@@ -504,25 +546,65 @@
         expandedArtists.has(a) ? expandedArtists.delete(a) : expandedArtists.add(a);
         renderConcerts();
       });
-      box.querySelectorAll("[data-seen]").forEach(b => b.onclick = () => markSeen(b.dataset.seen));
+      box.querySelectorAll("[data-attend]").forEach(b => b.onclick = () => toggleAttend(b.dataset.attend, b.dataset.on !== "1"));
     }
+
+    function renderCalendar(box, list) {
+      if (!state.calMonth) { const d = new Date(); state.calMonth = { y: d.getFullYear(), m: d.getMonth() }; }
+      const { y, m } = state.calMonth;
+      const byDay = {};
+      for (const e of list) {
+        if (!e.start_date) continue;
+        const d = new Date(e.start_date);
+        if (!isNaN(d) && d.getFullYear() === y && d.getMonth() === m) (byDay[d.getDate()] = byDay[d.getDate()] || []).push(e);
+      }
+      const startDow = (new Date(y, m, 1).getDay() + 6) % 7;
+      const days = new Date(y, m + 1, 0).getDate();
+      const today = new Date();
+      let cells = DOW.map(d => `<div class="fr-cal-dow">${d}</div>`).join("");
+      for (let i = 0; i < startDow; i++) cells += `<div class="fr-cal-cell empty"></div>`;
+      for (let day = 1; day <= days; day++) {
+        const evd = byDay[day] || [];
+        const isToday = today.getFullYear() === y && today.getMonth() === m && today.getDate() === day;
+        cells += `<div class="fr-cal-cell${isToday ? " today" : ""}"><span class="fr-cal-day">${day}</span>${evd.map(e => {
+          const u = safeUrl(e.link);
+          return `<a class="fr-cal-ev${e.attending ? " att" : ""}" ${u ? `href="${esc(u)}" target="_blank" rel="noopener"` : ""} title="${esc(e.artist + " — " + placeLine(e))}">${esc(e.artist)}</a>`;
+        }).join("")}</div>`;
+      }
+      const tba = list.filter(e => !e.start_date);
+      box.innerHTML = `
+        <div class="fr-cal-head">
+          <button class="btn btn-secondary btn-icon" id="cal-prev" aria-label="Previous month"><i class="ph ph-caret-left"></i></button>
+          <button class="btn btn-secondary btn-icon" id="cal-next" aria-label="Next month"><i class="ph ph-caret-right"></i></button>
+          <span class="fr-cal-title">${MONTHS_FULL[m]} ${y}</span>
+          <button class="btn btn-ghost" id="cal-today">Today</button>
+        </div>
+        <div class="fr-cal-grid">${cells}</div>
+        ${tba.length ? `<div class="fr-cal-tba"><span class="fr-mono-note">DATE TBA</span>${tba.map(e => `<span class="tag tag-neutral">${esc(e.artist)}</span>`).join(" ")}</div>` : ""}`;
+      $("#cal-prev").onclick = () => shiftMonth(-1);
+      $("#cal-next").onclick = () => shiftMonth(1);
+      $("#cal-today").onclick = () => { const d = new Date(); state.calMonth = { y: d.getFullYear(), m: d.getMonth() }; renderConcerts(); };
+    }
+    function shiftMonth(delta) { let { y, m } = state.calMonth; m += delta; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } state.calMonth = { y, m }; renderConcerts(); }
 
     function cardHTML(e) {
       const link = safeUrl(e.link);
-      const seenLine = e.is_new ? "" : `<span class="fr-seen-line"><i class="ph ph-check"></i> Seen</span>`;
-      const markBtn = e.is_new ? `<button class="btn btn-ghost fr-markseen" data-seen="${esc(e.product_id)}"><i class="ph ph-check"></i> Mark seen</button>` : "";
+      const goingLine = e.attending ? `<span class="fr-going-line"><i class="ph ph-star"></i> Going</span>` : "";
+      const attendBtn = e.attending
+        ? `<button class="btn fr-attend" data-attend="${esc(e.product_id)}" data-on="1" style="color:var(--color-accent);border-color:var(--color-accent);padding:5px 9px"><i class="ph ph-star"></i> Going</button>`
+        : `<button class="btn btn-ghost fr-attend" data-attend="${esc(e.product_id)}" data-on="0" style="padding:5px 9px"><i class="ph ph-star"></i> I'm going</button>`;
       const ticket = link
         ? `<a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-ticket"></i> Tickets</a>`
         : `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`;
-      return `<article class="fr-card${e.is_new ? "" : " is-seen"}">
+      return `<article class="fr-card${e.attending ? " is-attending" : ""}">
         <div class="fr-card-main">
           <span class="fr-serial" style="margin-left:0">${esc(serial(e))}</span>
-          <span class="fr-title">${esc(e.name || e.artist)}</span>${seenLine}
+          <span class="fr-title">${esc(e.name || e.artist)}</span>${goingLine}
         </div>
         <div class="fr-perf"></div>
         <div class="fr-stub">
           <div class="fr-meta"><span>${esc(dateLine(e.start_date))}</span><span class="fr-placeline">${esc(placeLine(e))}</span></div>
-          <div class="fr-stub-actions">${markBtn}${ticket}</div>
+          <div class="fr-stub-actions">${attendBtn}${ticket}</div>
         </div></article>`;
     }
 
@@ -581,10 +663,12 @@
       }});
     }
 
-    async function markSeen(productId) {
+    async function toggleAttend(productId, going) {
       const ev = state.events.find(e => e.product_id === productId); if (!ev) return;
-      try { await api("/events/seen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_id: productId }) });
-        ev.is_new = false; renderConcerts(); toast(`Marked as seen — ${ev.artist}`, "ph-check", "var(--fr-success)");
+      try {
+        await api("/events/attending", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_id: productId, attending: going }) });
+        ev.attending = going; renderConcerts();
+        toast(going ? `Going to ${ev.artist}` : "Removed from your plans", "ph-star", "var(--color-accent)");
       } catch { toast("Couldn't update that show.", "ph-warning", "var(--fr-danger)"); }
     }
 
@@ -690,7 +774,6 @@
 
     // ── menus / views ──────────────────────────────────────────
     function closeMenus() { $("#menu").hidden = true; $("#list-menu").hidden = true; toggleFilter(false); }
-    function setTab(v) { document.querySelectorAll('input[name="fr-tab"]').forEach(i => i.checked = i.value === v); }
     function toggleFilter(open) { const p = $("#filter-pop"), b = $("#btn-filter"); const show = open ?? p.hidden; if (show) renderFilterPop(); p.hidden = !show; b.setAttribute("aria-expanded", show); b.style.boxShadow = show ? "inset 0 0 0 1px var(--color-accent)" : ""; }
     function showView(v) { $("#view-dashboard").hidden = v !== "dashboard"; $("#view-profile").hidden = v !== "profile"; closeMenus(); }
 
@@ -736,7 +819,8 @@
     $("#mi-profile").onclick = () => showView("profile");
     $("#btn-back").onclick = () => showView("dashboard");
     $("#btn-filter").onclick = e => { e.stopPropagation(); toggleFilter(); };
-    document.querySelectorAll('input[name="fr-tab"]').forEach(i => i.onchange = () => { state.tab = i.value; renderConcerts(); });
+    $("#chips").addEventListener("click", e => { const b = e.target.closest("[data-quick]"); if (!b) return; state.quick = b.dataset.quick; syncChips(); renderConcerts(); });
+    $("#view-seg").addEventListener("change", e => { state.view = e.target.value; renderConcerts(); });
     $("#theme-seg").addEventListener("change", e => { localStorage.setItem("fr-theme", e.target.value); applyTheme(); });
     document.addEventListener("click", e => {
       if (!e.target.closest("#menu") && !e.target.closest("#btn-menu")) $("#menu").hidden = true;
