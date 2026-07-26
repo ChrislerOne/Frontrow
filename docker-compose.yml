@@ -1,7 +1,25 @@
 services:
-  # SSO gate: Google login, invite-only via an email allowlist. Sits in front of
-  # the app and proxies to it only after auth. All requests (UI + API) pass through
-  # here, so the app itself needs no auth code.
+  # Writes the invite list from the FRONTROW_ALLOWED_EMAILS env var into a file that
+  # oauth2-proxy reads, then exits. This exists because Coolify's `content:` mount does
+  # NOT reliably interpolate env vars (it wrote the literal string "${FRONTROW_...}"),
+  # so we materialize the file ourselves with a shell. The env var stays the single
+  # source of truth, managed in Coolify (multiline, one email per line).
+  oauth2-emails-init:
+    image: busybox:1.37
+    restart: "no"
+    environment:
+      - FRONTROW_ALLOWED_EMAILS=${FRONTROW_ALLOWED_EMAILS}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        printf '%s\n' "$$FRONTROW_ALLOWED_EMAILS" | tr ',' '\n' | sed '/^[[:space:]]*$$/d' > /shared/emails.txt
+        echo "allowlist written: $$(grep -c @ /shared/emails.txt) email(s)"
+    volumes:
+      - oauth2-emails:/shared
+
+  # SSO gate: Google login, invite-only via the allowlist file above. Proxies to the
+  # app only after auth, so the app itself needs no auth code.
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
     restart: unless-stopped
@@ -9,9 +27,9 @@ services:
       - --http-address=0.0.0.0:4180
       - --reverse-proxy=true                       # trust Traefik's X-Forwarded-* headers
       - --provider=google
-      - --upstream=http://concert-tracker:8000     # the app, reachable only on the internal network
+      - --upstream=http://concert-tracker:8000     # the app, internal network only
       - --redirect-url=https://frontrow.lewerenz.app/oauth2/callback
-      - --authenticated-emails-file=/etc/oauth2-proxy/emails.txt  # invite list (from FRONTROW_ALLOWED_EMAILS, see volumes)
+      - --authenticated-emails-file=/etc/oauth2-proxy/emails.txt
       - --cookie-secure=true
       - --cookie-expire=168h
       - --skip-provider-button=true                # straight to Google, no interstitial
@@ -20,22 +38,15 @@ services:
       - OAUTH2_PROXY_CLIENT_ID=${OAUTH2_PROXY_CLIENT_ID}
       - OAUTH2_PROXY_CLIENT_SECRET=${OAUTH2_PROXY_CLIENT_SECRET}
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
-      # The invite list: a multiline Coolify env var, one email per line. Not git.
-      - FRONTROW_ALLOWED_EMAILS=${FRONTROW_ALLOWED_EMAILS}
     volumes:
-      # Coolify's `content:` extension writes the allowlist file from the env var
-      # above at deploy time. Change the list = edit the env var in Coolify + redeploy.
-      - type: bind
-        source: ./oauth2-emails.txt
-        target: /etc/oauth2-proxy/emails.txt
-        content: |
-          ${FRONTROW_ALLOWED_EMAILS}
+      - oauth2-emails:/etc/oauth2-proxy:ro         # emails.txt materialized by the init container
     expose:
       - "4180"
-    # No healthcheck on purpose: this image is distroless (no shell/curl/wget), so a
-    # healthcheck command can't run. A *failing* healthcheck would make Traefik stop
-    # routing (site down). Instead we gate startup on the app being healthy, below.
+    # No healthcheck: distroless image (no shell/curl/wget); a failing probe would make
+    # Traefik stop routing. Startup is gated on the app being healthy + the init done.
     depends_on:
+      oauth2-emails-init:
+        condition: service_completed_successfully
       concert-tracker:
         condition: service_healthy
 
@@ -47,9 +58,8 @@ services:
     volumes:
       - concert-data:/data       # persists the SQLite DB across redeploys
     expose:
-      - "8000"                   # internal only; only oauth2-proxy reaches it now
-    # Liveness probe. The Playwright image ships python3, so we probe with urllib
-    # (no curl needed). Hits "/" (static index) so it doesn't touch the DB.
+      - "8000"                   # internal only; only oauth2-proxy reaches it
+    # Liveness probe via python3/urllib (no curl needed); hits "/" so it skips the DB.
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/', timeout=4).getcode()==200 else 1)"]
       interval: 30s
@@ -59,3 +69,4 @@ services:
 
 volumes:
   concert-data:
+  oauth2-emails:
