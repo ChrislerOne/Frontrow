@@ -1,4 +1,33 @@
 services:
+  # SSO gate: Google login, invite-only via an email allowlist. Sits in front of
+  # the app and proxies to it only after auth. All requests (UI + API) pass through
+  # here, so the app itself needs no auth code.
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
+    restart: unless-stopped
+    command:
+      - --http-address=0.0.0.0:4180
+      - --reverse-proxy=true                       # trust Traefik's X-Forwarded-* headers
+      - --provider=google
+      - --upstream=http://concert-tracker:8000     # the app, reachable only on the internal network
+      - --redirect-url=https://frontrow.lewerenz.app/oauth2/callback
+      - --authenticated-emails-file=/etc/oauth2-proxy/emails.txt  # the invite list (lives on the server, not git)
+      - --cookie-secure=true
+      - --cookie-expire=168h
+      - --skip-provider-button=true                # straight to Google, no interstitial
+    environment:
+      # Set these in Coolify's Environment Variables (NOT committed):
+      - OAUTH2_PROXY_CLIENT_ID=${OAUTH2_PROXY_CLIENT_ID}
+      - OAUTH2_PROXY_CLIENT_SECRET=${OAUTH2_PROXY_CLIENT_SECRET}
+      - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
+    volumes:
+      # Host file, managed over SSH — keeps the allowlist out of git.
+      - /data/frontrow/oauth2-emails.txt:/etc/oauth2-proxy/emails.txt:ro
+    expose:
+      - "4180"
+    depends_on:
+      - concert-tracker
+
   concert-tracker:
     build: .
     restart: unless-stopped
@@ -7,7 +36,7 @@ services:
     volumes:
       - concert-data:/data       # persists the SQLite DB across redeploys
     expose:
-      - "8000"                   # reachable only via Coolify's proxy (domain + SSL + Basic Auth), not published on the host
+      - "8000"                   # internal only; only oauth2-proxy reaches it now
 
 volumes:
   concert-data:
