@@ -148,3 +148,16 @@ class EventSeen(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     product_id: Mapped[str] = mapped_column(String, index=True)
     seen_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class ArtistSuggestion(Base):
+    """Artist names cached from an external catalog (Deezer) to power the add-artist
+    autocomplete. Not linked to tracking — just a growing name index."""
+
+    __tablename__ = "artist_suggestions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, index=True)
+    image: Mapped[str | None] = mapped_column(String, nullable=True)
+    source: Mapped[str] = mapped_column(String, default="deezer")
+    added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

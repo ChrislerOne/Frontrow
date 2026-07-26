@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 
 from .auth import current_user, require_edit, require_owner, require_view, role_of
 from .database import Base, engine, get_db
+from .artist_search import deezer_search
 from .models import (
-    Artist, ArtistList, Event, EventSeen, ListArtist, ListInvite, ListMember, ShareLink, User,
+    Artist, ArtistList, ArtistSuggestion, Event, EventSeen, ListArtist, ListInvite,
+    ListMember, ShareLink, User,
 )
 from .scheduler import start_scheduler
 from .scraper import scrape_all, scrape_artist
@@ -375,6 +377,38 @@ def mark_seen(payload: SeenIn, user: User = Depends(current_user), db: Session =
         db.add(EventSeen(user_id=user.id, product_id=payload.product_id))
         db.commit()
     return {"product_id": payload.product_id, "is_new": False}
+
+
+@app.get("/api/artists/search")
+def artist_search(q: str = "", limit: int = 8, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Autocomplete artist names. Cache-first: if we already have prefix matches in our
+    DB we serve those and skip Deezer entirely; only a cache miss triggers one Deezer
+    call, whose results we then store — so external calls stay minimal."""
+    q = q.strip()
+    if len(q) < 2:
+        return []
+    limit = max(1, min(limit, 15))
+
+    cached = (
+        db.query(ArtistSuggestion)
+        .filter(ArtistSuggestion.name.ilike(f"{q}%"))
+        .order_by(ArtistSuggestion.name)
+        .limit(limit)
+        .all()
+    )
+    if cached:
+        return [{"name": r.name, "image": r.image} for r in cached]  # cache hit — no Deezer call
+
+    try:
+        fresh = deezer_search(q, limit)
+    except Exception:
+        fresh = []
+    for r in fresh:
+        if not db.query(ArtistSuggestion).filter_by(name=r["name"]).first():
+            db.add(ArtistSuggestion(name=r["name"], image=r.get("image")))
+    if fresh:
+        db.commit()
+    return fresh[:limit]
 
 
 @app.post("/api/scrape")

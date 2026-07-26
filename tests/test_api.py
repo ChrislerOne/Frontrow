@@ -182,3 +182,31 @@ def test_numeric_google_sub_is_not_used_as_name(client):
 def test_preferred_username_is_used_as_name(client):
     r = client.get("/api/me", headers={"X-Forwarded-Email": "q@x.com", "X-Forwarded-Preferred-Username": "Wendy Appleseed"})
     assert r.json()["name"] == "Wendy Appleseed"
+
+
+# ── artist autocomplete (cache-first Deezer) ─────────────────────────────────
+def test_artist_search_is_cache_first(client, monkeypatch):
+    calls = {"n": 0}
+
+    def fake(q, limit=8):
+        calls["n"] += 1
+        return [{"name": "Fontaines D.C.", "image": None}, {"name": "The Fontaines", "image": None}]
+
+    monkeypatch.setattr("app.main.deezer_search", fake)
+
+    assert client.get("/api/artists/search?q=f", headers=H("a@x.com")).json() == []  # too short
+    assert calls["n"] == 0
+
+    r1 = client.get("/api/artists/search?q=fontaines", headers=H("a@x.com")).json()  # cache miss → Deezer once
+    assert [x["name"] for x in r1] == ["Fontaines D.C.", "The Fontaines"] and calls["n"] == 1
+
+    r2 = client.get("/api/artists/search?q=fontaines", headers=H("a@x.com")).json()  # cache hit → no call
+    assert calls["n"] == 1 and any(x["name"] == "Fontaines D.C." for x in r2)
+
+
+def test_artist_search_survives_deezer_outage(client, monkeypatch):
+    def boom(q, limit=8):
+        raise RuntimeError("deezer down")
+
+    monkeypatch.setattr("app.main.deezer_search", boom)
+    assert client.get("/api/artists/search?q=zzznomatch", headers=H("a@x.com")).json() == []

@@ -96,6 +96,7 @@
 
     .fr-pop{position:absolute;z-index:45;top:calc(100% + 6px);left:0;width:274px;max-width:calc(100vw - 33.6px);padding:11.2px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:11.2px;animation:frFade .14s ease both}
     .fr-city{display:flex;flex-direction:column;gap:1px;max-height:214px;overflow-y:auto}
+    .fr-suggest{position:absolute;z-index:46;top:calc(100% + 4px);left:0;width:100%;padding:4px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:1px;animation:frFade .14s ease both;max-height:260px;overflow:auto}
 
     .fr-toasts{position:sticky;bottom:0;z-index:50;height:0;display:flex;justify-content:center;pointer-events:none}
     .fr-toasts-inner{position:absolute;bottom:16.8px;display:flex;flex-direction:column;gap:5.6px;align-items:center;width:min(420px,calc(100vw - 33.6px))}
@@ -153,9 +154,10 @@
 
       <div id="add-block" style="display:flex;flex-direction:column;gap:8.4px">
         <div class="field fr-add-row">
-          <div style="flex:1 1 240px">
+          <div style="flex:1 1 240px;position:relative">
             <label for="fr-add">Track an artist</label>
-            <input id="fr-add" class="input" placeholder="Add an artist — e.g. Fontaines D.C." autocomplete="off" />
+            <input id="fr-add" class="input" placeholder="Add an artist — e.g. Fontaines D.C." autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" />
+            <div id="add-suggest" class="fr-suggest" hidden></div>
           </div>
           <button class="btn btn-primary" id="btn-add" style="min-height:36px;min-width:104px"><i class="ph ph-plus"></i> Track</button>
         </div>
@@ -515,6 +517,7 @@
 
     // ── actions ────────────────────────────────────────────────
     async function addArtist() {
+      closeSuggest();
       const input = $("#fr-add"); const name = input.value.trim();
       $("#add-warning").innerHTML = "";
       if (!name) { input.style.borderColor = "var(--fr-danger)"; input.focus(); return; }
@@ -659,6 +662,37 @@
     // ── events ─────────────────────────────────────────────────
     $("#btn-add").onclick = addArtist;
     $("#fr-add").addEventListener("keydown", e => { if (e.key === "Enter") addArtist(); });
+
+    // add-artist autocomplete (cache-first via /api/artists/search → Deezer)
+    const suggBox = $("#add-suggest");
+    let suggestTimer, suggestSeq = 0;
+    function closeSuggest() { suggBox.hidden = true; $("#fr-add").setAttribute("aria-expanded", "false"); }
+    async function runSuggest(q) {
+      const seq = ++suggestSeq;
+      let items = [];
+      try { items = await api(`/artists/search?q=${encodeURIComponent(q)}`); } catch { items = []; }
+      if (seq !== suggestSeq) return;                 // a newer keystroke already fired
+      if (!items.length) { closeSuggest(); return; }
+      suggBox.innerHTML = items.map(it => `
+        <button type="button" class="fr-menu-item" data-name="${esc(it.name)}">
+          ${it.image ? `<img src="${esc(it.image)}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none" />` : '<i class="ph ph-music-notes" style="color:var(--color-accent)"></i>'}
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</span>
+        </button>`).join("");
+      suggBox.querySelectorAll("[data-name]").forEach(b => b.onmousedown = e => {
+        e.preventDefault();                            // keep focus; fire before blur
+        $("#fr-add").value = b.dataset.name;
+        closeSuggest();
+        addArtist();
+      });
+      suggBox.hidden = false; $("#fr-add").setAttribute("aria-expanded", "true");
+    }
+    $("#fr-add").addEventListener("input", () => {
+      const q = $("#fr-add").value.trim();
+      clearTimeout(suggestTimer);
+      if (q.length < 2) { closeSuggest(); return; }
+      suggestTimer = setTimeout(() => runSuggest(q), 220);
+    });
+    $("#fr-add").addEventListener("blur", () => setTimeout(closeSuggest, 150));
     $("#btn-refresh").onclick = refresh; $("#btn-refresh-2").onclick = refresh;
     $("#btn-menu").onclick = e => { e.stopPropagation(); const m = $("#menu"); const s = m.hidden; closeMenus(); m.hidden = !s; };
     $("#btn-listswitch").onclick = e => { e.stopPropagation(); const m = $("#list-menu"); const s = m.hidden; closeMenus(); if (s) renderListMenu(); m.hidden = !s; };
