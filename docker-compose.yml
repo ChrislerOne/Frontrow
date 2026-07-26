@@ -11,7 +11,7 @@ services:
       - --provider=google
       - --upstream=http://concert-tracker:8000     # the app, reachable only on the internal network
       - --redirect-url=https://frontrow.lewerenz.app/oauth2/callback
-      - --authenticated-emails-file=/etc/oauth2-proxy/emails.txt  # the invite list (lives on the server, not git)
+      - --authenticated-emails-file=/etc/oauth2-proxy/emails.txt  # invite list (from FRONTROW_ALLOWED_EMAILS, see volumes)
       - --cookie-secure=true
       - --cookie-expire=168h
       - --skip-provider-button=true                # straight to Google, no interstitial
@@ -32,8 +32,12 @@ services:
           ${FRONTROW_ALLOWED_EMAILS}
     expose:
       - "4180"
+    # No healthcheck on purpose: this image is distroless (no shell/curl/wget), so a
+    # healthcheck command can't run. A *failing* healthcheck would make Traefik stop
+    # routing (site down). Instead we gate startup on the app being healthy, below.
     depends_on:
-      - concert-tracker
+      concert-tracker:
+        condition: service_healthy
 
   concert-tracker:
     build: .
@@ -44,6 +48,14 @@ services:
       - concert-data:/data       # persists the SQLite DB across redeploys
     expose:
       - "8000"                   # internal only; only oauth2-proxy reaches it now
+    # Liveness probe. The Playwright image ships python3, so we probe with urllib
+    # (no curl needed). Hits "/" (static index) so it doesn't touch the DB.
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/', timeout=4).getcode()==200 else 1)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 40s
 
 volumes:
   concert-data:
