@@ -64,10 +64,16 @@
     .fr-kicker-row{display:flex;align-items:baseline;gap:8.4px}
     .fr-kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fr-serial{margin-left:auto;font-family:var(--fr-mono);font-size:9px;letter-spacing:.1em;color:color-mix(in srgb, var(--color-text) 32%, transparent);flex:none}
-    .fr-title{font-family:var(--font-heading);font-weight:500;font-size:17px;line-height:1.2;padding-right:56px;text-wrap:pretty}
+    .fr-title{font-family:var(--font-heading);font-weight:500;font-size:17px;line-height:1.2;text-wrap:pretty}
     .fr-seen-line{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:color-mix(in srgb, var(--color-text) 50%, transparent)}
-    .fr-stamp{position:absolute;top:14px;right:-6px;padding:3px 10px;border:1.5px solid var(--color-accent);color:var(--color-accent);border-radius:3px;font-family:var(--font-heading);font-size:11px;letter-spacing:.2em;text-transform:uppercase;background:color-mix(in srgb, var(--color-accent) 10%, transparent);transform:rotate(-12deg)}
-    .fr-stamp.is-fresh{animation:frStamp .5s cubic-bezier(.2,1.4,.4,1) both}
+    .fr-group + .fr-group{margin-top:11.2px}
+    .fr-group-head{display:flex;align-items:center;gap:10px;width:100%;padding:11.2px 14px;background:var(--color-surface);box-shadow:var(--shadow-sm);border:0;border-radius:10px;cursor:pointer;color:var(--color-text);text-align:left}
+    .fr-group-head:hover{box-shadow:var(--shadow-md)}
+    .fr-group-head > .ph{color:var(--color-accent);font-size:15px;flex:none}
+    .fr-group-name{font-family:var(--font-heading);font-weight:500;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fr-group-count{font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);flex:none}
+    .fr-group-next{margin-left:auto;font-family:var(--fr-mono);font-size:10px;letter-spacing:.1em;color:color-mix(in srgb, var(--color-text) 42%, transparent);flex:none}
+    .fr-group-body{padding-top:8.4px}
     .fr-perf{position:relative;height:1px;background:repeating-linear-gradient(to right, var(--color-divider) 0 5px, transparent 5px 11px)}
     .fr-perf::before,.fr-perf::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--color-bg)}
     .fr-perf::before{left:-7px}.fr-perf::after{right:-7px}
@@ -246,6 +252,7 @@
       return `${WD[d.getDay()]} · ${d.getDate()} ${MO[d.getMonth()]} ${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`;
     };
     const placeLine = e => [e.venue, e.city].filter(Boolean).join(" · ").toUpperCase() || "VENUE TBA";
+    const shortDate = iso => { const d = new Date(iso); return isNaN(d) ? "TBA" : `${WD[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}`; };
     const serial = e => {
       const c = (e.city || "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "XXX";
       let dp = "TBA";
@@ -262,7 +269,7 @@
       me: null, lists: [], currentId: null, detail: null,
       events: [], tab: "all", cityFilter: new Set(), loading: true,
     };
-    const stamped = new Set();
+    const expandedArtists = new Set();
     const canEdit = () => !!(state.detail && state.detail.can_edit);
     const isOwner = () => !!(state.detail && state.detail.role === "owner");
 
@@ -353,6 +360,7 @@
     async function selectList(id) {
       state.currentId = id;
       localStorage.setItem("fr-current-list", id);
+      expandedArtists.clear();
       state.loading = true;
       closeMenus();
       renderListBar(); renderArtists(); renderConcerts();
@@ -465,15 +473,42 @@
         box.innerHTML = `<div class="fr-empty"><i class="ph ph-funnel"></i><span class="h">No shows match this filter</span><span class="text-muted" style="font-size:14px">${state.tab==="new"?"Nothing new here right now.":"Try a different city or clear the filter."}</span><button class="btn btn-primary" id="empty-clear"><i class="ph ph-x"></i> Clear filter</button></div>`;
         $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.tab = "all"; setTab("all"); renderConcerts(); renderFilterButton(); }; return;
       }
-      box.innerHTML = `<div class="fr-grid">${list.map(cardHTML).join("")}</div>`;
+
+      // group by artist, sorted by each artist's next show
+      const groups = new Map();
+      for (const e of list) {
+        if (!groups.has(e.artist)) groups.set(e.artist, []);
+        groups.get(e.artist).push(e);
+      }
+      const byDate = (a, b) => (a.start_date === null) - (b.start_date === null) || String(a.start_date).localeCompare(String(b.start_date));
+      const groupArr = [...groups.entries()].map(([artist, events]) => {
+        events.sort(byDate);
+        return { artist, events, next: (events.find(e => e.start_date) || {}).start_date || null };
+      }).sort((a, b) => (a.next === null) - (b.next === null) || String(a.next).localeCompare(String(b.next)));
+      if (groupArr.length === 1) expandedArtists.add(groupArr[0].artist);
+
+      box.innerHTML = groupArr.map(g => {
+        const open = expandedArtists.has(g.artist);
+        return `<div class="fr-group">
+          <button class="fr-group-head" data-artist="${esc(g.artist)}" aria-expanded="${open}">
+            <i class="ph ph-caret-${open ? "down" : "right"}"></i>
+            <span class="fr-group-name">${esc(g.artist)}</span>
+            <span class="fr-group-count">${g.events.length} show${g.events.length === 1 ? "" : "s"}</span>
+            <span class="fr-group-next">${g.next ? "NEXT · " + esc(shortDate(g.next)) : "DATE TBA"}</span>
+          </button>
+          <div class="fr-group-body" ${open ? "" : "hidden"}><div class="fr-grid">${g.events.map(cardHTML).join("")}</div></div>
+        </div>`;
+      }).join("");
+      box.querySelectorAll(".fr-group-head").forEach(b => b.onclick = () => {
+        const a = b.dataset.artist;
+        expandedArtists.has(a) ? expandedArtists.delete(a) : expandedArtists.add(a);
+        renderConcerts();
+      });
       box.querySelectorAll("[data-seen]").forEach(b => b.onclick = () => markSeen(b.dataset.seen));
     }
 
     function cardHTML(e) {
       const link = safeUrl(e.link);
-      const fresh = e.is_new && !stamped.has(e.product_id);
-      if (e.is_new) stamped.add(e.product_id);
-      const stamp = e.is_new ? `<span class="fr-stamp${fresh ? " is-fresh" : ""}">New</span>` : "";
       const seenLine = e.is_new ? "" : `<span class="fr-seen-line"><i class="ph ph-check"></i> Seen</span>`;
       const markBtn = e.is_new ? `<button class="btn btn-ghost fr-markseen" data-seen="${esc(e.product_id)}"><i class="ph ph-check"></i> Mark seen</button>` : "";
       const ticket = link
@@ -481,9 +516,9 @@
         : `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`;
       return `<article class="fr-card${e.is_new ? "" : " is-seen"}">
         <div class="fr-card-main">
-          <div class="fr-kicker-row"><span class="fr-kicker">${esc(e.artist)}</span><span class="fr-serial">${esc(serial(e))}</span></div>
+          <span class="fr-serial" style="margin-left:0">${esc(serial(e))}</span>
           <span class="fr-title">${esc(e.name || e.artist)}</span>${seenLine}
-        </div>${stamp}
+        </div>
         <div class="fr-perf"></div>
         <div class="fr-stub">
           <div class="fr-meta"><span>${esc(dateLine(e.start_date))}</span><span class="fr-placeline">${esc(placeLine(e))}</span></div>
