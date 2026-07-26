@@ -171,3 +171,14 @@ def test_first_user_adopts_existing_catalog(client, session_factory):
     lid = default_list(client, "a@x.com")["id"]
     detail = client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()
     assert any(a["name"] == "Kraftwerk" for a in detail["artists"])
+
+
+# ── identity display name ────────────────────────────────────────────────────
+def test_numeric_google_sub_is_not_used_as_name(client):
+    r = client.get("/api/me", headers={"X-Forwarded-Email": "z@x.com", "X-Forwarded-User": "109187918541011064832"})
+    assert r.status_code == 200 and r.json()["name"] != "109187918541011064832"
+
+
+def test_preferred_username_is_used_as_name(client):
+    r = client.get("/api/me", headers={"X-Forwarded-Email": "q@x.com", "X-Forwarded-Preferred-Username": "Wendy Appleseed"})
+    assert r.json()["name"] == "Wendy Appleseed"

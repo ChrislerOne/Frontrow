@@ -24,9 +24,21 @@ def _seed_default_list(db: Session, user: User) -> None:
     db.commit()
 
 
+def _display_name(*candidates: str | None) -> str | None:
+    """A human-ish name from oauth2-proxy headers. X-Forwarded-User is the Google
+    numeric `sub`, not a name, so anything all-digits or email-shaped is rejected;
+    the UI falls back to the email when this is None."""
+    for c in candidates:
+        c = (c or "").strip()
+        if c and not c.isdigit() and "@" not in c:
+            return c
+    return None
+
+
 def current_user(
     x_forwarded_email: str | None = Header(default=None),
     x_forwarded_user: str | None = Header(default=None),
+    x_forwarded_preferred_username: str | None = Header(default=None),
     x_auth_request_email: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ) -> User:
@@ -37,13 +49,18 @@ def current_user(
     if not email:
         raise HTTPException(401, "Not authenticated")
 
+    name = _display_name(x_forwarded_preferred_username, x_forwarded_user)
     user = db.query(User).filter(User.email == email).first()
     if user is None:
-        user = User(email=email, name=x_forwarded_user)
+        user = User(email=email, name=name)
         db.add(user)
         db.commit()
         db.refresh(user)
         _seed_default_list(db, user)
+    elif user.name and user.name.isdigit():
+        # Repair rows that stored the numeric Google sub as the name.
+        user.name = name
+        db.commit()
     _resolve_invites(db, user)
     return user
 

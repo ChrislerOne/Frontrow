@@ -379,9 +379,11 @@
       $("#avatar").textContent = initials(state.me);
       $("#p-avatar").textContent = initials(state.me);
       if (state.me) {
-        $("#me-name").textContent = state.me.name || state.me.email;
+        const local = (state.me.email || "").split("@")[0];
+        const dn = state.me.name || local || "Signed in";
+        $("#me-name").textContent = dn;
         $("#me-email").textContent = state.me.email;
-        $("#p-name").textContent = state.me.name || "Your account";
+        $("#p-name").textContent = dn;
         $("#p-email").textContent = state.me.email;
       }
     }
