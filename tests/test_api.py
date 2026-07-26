@@ -210,3 +210,9 @@ def test_artist_search_survives_deezer_outage(client, monkeypatch):
 
     monkeypatch.setattr("app.main.deezer_search", boom)
     assert client.get("/api/artists/search?q=zzznomatch", headers=H("a@x.com")).json() == []
+
+
+def test_artist_search_dedupes_duplicate_names(client, monkeypatch):
+    monkeypatch.setattr("app.main.deezer_search", lambda q, limit=8: [{"name": "Bonobo", "image": None}] * 3)
+    r = client.get("/api/artists/search?q=bonobo", headers=H("a@x.com")).json()
+    assert [x["name"] for x in r] == ["Bonobo"]

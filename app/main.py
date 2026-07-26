@@ -403,12 +403,18 @@ def artist_search(q: str = "", limit: int = 8, user: User = Depends(current_user
         fresh = deezer_search(q, limit)
     except Exception:
         fresh = []
+    seen, out = set(), []
     for r in fresh:
+        key = r["name"].lower()
+        if key in seen:  # Deezer returns several artists with the same name
+            continue
+        seen.add(key)
+        out.append(r)
         if not db.query(ArtistSuggestion).filter_by(name=r["name"]).first():
             db.add(ArtistSuggestion(name=r["name"], image=r.get("image")))
     if fresh:
         db.commit()
-    return fresh[:limit]
+    return out[:limit]
 
 
 @app.post("/api/scrape")
