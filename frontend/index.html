@@ -35,6 +35,15 @@
     .fr-add-row{display:flex;flex-wrap:wrap;gap:8.4px;align-items:flex-end}
     .fr-hint{color:color-mix(in srgb, var(--color-text) 55%, transparent);font-size:12px}
     .fr-warning{display:flex;align-items:flex-start;gap:8.4px;padding:11.2px;border-radius:8px;background:var(--color-surface);box-shadow:0 0 0 1px color-mix(in srgb, var(--fr-danger) 60%, transparent);font-size:13px;animation:frFade .2s ease both}
+
+    /* list switcher */
+    .fr-listbar{display:flex;flex-wrap:wrap;align-items:center;gap:8.4px}
+    .fr-listbtn{display:inline-flex;align-items:center;gap:8.4px;background:transparent;border:0;cursor:pointer;color:var(--color-text);padding:4px 6px;border-radius:8px}
+    .fr-listbtn:hover{background:color-mix(in srgb, var(--color-text) 7%, transparent)}
+    .fr-listname{font-family:var(--font-heading);font-weight:500;font-size:22px;letter-spacing:-.015em}
+    .fr-rolechip{font-family:var(--fr-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;border-radius:5px;border:1px solid var(--color-divider);color:color-mix(in srgb, var(--color-text) 60%, transparent)}
+    .fr-rolechip.owner{border-color:var(--color-accent);color:var(--color-accent)}
+
     .fr-artist-row{display:flex;align-items:center;gap:8.4px;padding:8.4px 8.4px 8.4px 11.2px;border-radius:8px;background:var(--color-surface)}
     .fr-artist-row:hover{background:var(--color-neutral-800)}
     .fr-artist-name{flex:1;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -73,10 +82,14 @@
     .fr-empty.sm .h{font-size:16px}
     .fr-skel{border-radius:14px;background:linear-gradient(90deg, var(--color-surface) 0%, var(--color-neutral-800) 50%, var(--color-surface) 100%);background-size:320px 100%;animation:frShimmer 1.2s linear infinite}
 
-    .fr-avatar{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--color-accent-800);color:var(--color-accent-100);font-size:12px}
-    .fr-menu{position:absolute;right:0;top:calc(100% + 6px);width:236px;padding:8.4px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:2.8px;animation:frFade .16s ease both;z-index:40}
+    .fr-avatar{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--color-accent-800);color:var(--color-accent-100);font-size:11px;letter-spacing:.04em}
+    .fr-menu{position:absolute;top:calc(100% + 6px);min-width:236px;padding:8.4px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:2.8px;animation:frFade .16s ease both;z-index:40}
+    .fr-menu.right{right:0}.fr-menu.left{left:0}
     .fr-menu .btn{justify-content:flex-start;color:var(--color-text);padding:6px 8.4px}
     .fr-menu-head{padding:5.6px 8.4px 8.4px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--color-divider)}
+    .fr-menu-item{display:flex;align-items:center;gap:8.4px;width:100%;padding:6px 8.4px;border:0;border-radius:6px;cursor:pointer;text-align:left;font:inherit;font-size:13.5px;color:var(--color-text);background:transparent}
+    .fr-menu-item:hover{background:color-mix(in srgb, var(--color-text) 7%, transparent)}
+    .fr-menu-item.active{box-shadow:inset 0 0 0 1px var(--color-accent)}
 
     .fr-pop{position:absolute;z-index:45;top:calc(100% + 6px);left:0;width:274px;max-width:calc(100vw - 33.6px);padding:11.2px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:11.2px;animation:frFade .14s ease both}
     .fr-city{display:flex;flex-direction:column;gap:1px;max-height:214px;overflow-y:auto}
@@ -97,24 +110,40 @@
       <button class="btn btn-secondary btn-icon" id="btn-refresh" title="Refresh now" aria-label="Refresh now"><i class="ph ph-arrows-clockwise" style="font-size:16px"></i></button>
       <div style="position:relative">
         <button class="btn btn-secondary" id="btn-menu" style="gap:8px;padding:5.6px 8.4px" aria-haspopup="true" aria-expanded="false">
-          <span class="fr-avatar"><i class="ph ph-user"></i></span>
+          <span class="fr-avatar" id="avatar"><i class="ph ph-user"></i></span>
           <i class="ph ph-caret-down" style="font-size:12px;opacity:.7"></i>
         </button>
-        <div id="menu" class="fr-menu" hidden>
+        <div id="menu" class="fr-menu right" hidden>
           <div class="fr-menu-head">
-            <span style="font-size:14px">Signed in</span>
-            <span style="font-family:var(--fr-mono);font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">via Google</span>
+            <span id="me-name" style="font-size:14px">Signed in</span>
+            <span id="me-email" style="font-family:var(--fr-mono);font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">via Google</span>
           </div>
-          <button class="btn btn-ghost" id="mi-profile"><i class="ph ph-user-circle"></i> Profile &amp; settings</button>
-          <button class="btn btn-ghost" id="mi-share"><i class="ph ph-share-network"></i> Share my list</button>
-          <a class="btn btn-ghost" href="/oauth2/sign_out?rd=%2F"><i class="ph ph-sign-out"></i> Sign out</a>
+          <button class="fr-menu-item" id="mi-profile"><i class="ph ph-user-circle"></i> Profile &amp; settings</button>
+          <button class="fr-menu-item" id="mi-share"><i class="ph ph-share-network"></i> Share this list</button>
+          <a class="fr-menu-item" href="/oauth2/sign_out?rd=%2F"><i class="ph ph-sign-out"></i> Sign out</a>
         </div>
       </div>
     </header>
 
     <!-- ── DASHBOARD ───────────────────────────────────────────── -->
     <div class="fr-wrap" id="view-dashboard">
-      <div style="display:flex;flex-direction:column;gap:8.4px">
+      <div class="fr-listbar">
+        <div style="position:relative">
+          <button class="fr-listbtn" id="btn-listswitch" aria-expanded="false">
+            <span class="fr-listname" id="cur-list-name">…</span>
+            <span class="fr-rolechip" id="cur-list-role" hidden></span>
+            <i class="ph ph-caret-down" style="opacity:.6"></i>
+          </button>
+          <div id="list-menu" class="fr-menu left" hidden></div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:5.6px;flex-wrap:wrap">
+          <button class="btn btn-secondary" id="btn-share-2" hidden><i class="ph ph-share-network"></i> Share</button>
+          <button class="btn btn-secondary btn-icon" id="btn-rename" title="Rename list" hidden><i class="ph ph-pencil-simple" style="font-size:15px"></i></button>
+          <button class="btn btn-secondary btn-icon" id="btn-delete" title="Delete list" hidden><i class="ph ph-trash" style="font-size:15px"></i></button>
+        </div>
+      </div>
+
+      <div id="add-block" style="display:flex;flex-direction:column;gap:8.4px">
         <div class="field fr-add-row">
           <div style="flex:1 1 240px">
             <label for="fr-add">Track an artist</label>
@@ -162,8 +191,8 @@
     <div class="fr-wrap" id="view-profile" hidden style="max-width:660px">
       <button class="btn btn-ghost" id="btn-back" style="align-self:flex-start;color:color-mix(in srgb, var(--color-text) 65%, transparent)"><i class="ph ph-arrow-left"></i> Back to shows</button>
       <div style="display:flex;align-items:center;gap:16.8px;flex-wrap:wrap">
-        <span class="fr-avatar" style="width:56px;height:56px;font-family:var(--font-heading);font-size:19px"><i class="ph ph-user"></i></span>
-        <div style="display:flex;flex-direction:column;gap:2px"><h4 style="margin:0">Your account</h4><span style="font-family:var(--fr-mono);font-size:12px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">Signed in with Google</span></div>
+        <span class="fr-avatar" id="p-avatar" style="width:56px;height:56px;font-family:var(--font-heading);font-size:19px"><i class="ph ph-user"></i></span>
+        <div style="display:flex;flex-direction:column;gap:2px"><h4 id="p-name" style="margin:0">Your account</h4><span id="p-email" style="font-family:var(--fr-mono);font-size:12px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">Signed in with Google</span></div>
       </div>
       <hr class="hr" />
       <div style="display:flex;flex-direction:column;gap:5.6px">
@@ -175,20 +204,10 @@
           <label class="seg-opt"><input type="radio" name="fr-theme" value="system" /><i class="ph ph-monitor"></i><span>System</span></label>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:5.6px">
-        <h6 style="margin:0">Default city</h6>
-        <span class="text-muted" style="font-size:13px;margin-bottom:5.6px">Open Frontrow already filtered to your city.</span>
-        <select class="input" id="default-city" style="max-width:260px"></select>
-      </div>
       <hr class="hr" />
       <div style="display:flex;flex-direction:column;gap:8.4px;align-items:flex-start">
         <h6 style="margin:0">Session</h6>
         <a class="btn btn-secondary" href="/oauth2/sign_out?rd=%2F"><i class="ph ph-sign-out"></i> Sign out</a>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8.4px;align-items:flex-start;padding:16.8px;border-radius:8px;box-shadow:0 0 0 1px color-mix(in srgb, var(--fr-danger) 45%, transparent)">
-        <span style="font-family:var(--font-heading);font-size:14px;color:var(--fr-danger)">Danger zone</span>
-        <span class="text-muted" style="font-size:13px">Stop watching everything and clear your list. This can't be undone.</span>
-        <button class="btn" id="btn-wipe" style="color:var(--fr-danger);border-color:color-mix(in srgb, var(--fr-danger) 70%, transparent)"><i class="ph ph-trash"></i> Remove all artists</button>
       </div>
     </div>
 
@@ -199,39 +218,43 @@
   <script>
     "use strict";
     const $ = (s, r = document) => r.querySelector(s);
-    const api = (path, opts) => fetch("/api" + path, opts).then(r => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
+    async function api(path, opts) {
+      const r = await fetch("/api" + path, opts);
+      if (!r.ok) { const e = new Error("HTTP " + r.status); e.status = r.status; throw e; }
       return r.status === 204 ? null : r.json();
-    });
+    }
     const esc = s => String(s ?? "").replace(/[&<>"']/g, c => (
       { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     const safeUrl = u => (typeof u === "string" && /^https?:\/\//i.test(u)) ? u : null;
 
     const WD = ["SO","MO","DI","MI","DO","FR","SA"];
     const MO = ["JAN","FEB","MRZ","APR","MAI","JUN","JUL","AUG","SEP","OKT","NOV","DEZ"];
-    function dateLine(iso) {
+    const dateLine = iso => {
       if (!iso) return "DATE TBA";
-      const d = new Date(iso);
-      if (isNaN(d)) return "DATE TBA";
-      const pad = n => String(n).padStart(2, "0");
-      return `${WD[d.getDay()]} · ${d.getDate()} ${MO[d.getMonth()]} ${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    }
-    function placeLine(ev) {
-      return [ev.venue, ev.city].filter(Boolean).join(" · ").toUpperCase() || "VENUE TBA";
-    }
-    function serial(ev) {
-      const c = (ev.city || "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "XXX";
+      const d = new Date(iso); if (isNaN(d)) return "DATE TBA";
+      const p = n => String(n).padStart(2, "0");
+      return `${WD[d.getDay()]} · ${d.getDate()} ${MO[d.getMonth()]} ${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+    const placeLine = e => [e.venue, e.city].filter(Boolean).join(" · ").toUpperCase() || "VENUE TBA";
+    const serial = e => {
+      const c = (e.city || "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "XXX";
       let dp = "TBA";
-      if (ev.start_date) { const d = new Date(ev.start_date); if (!isNaN(d)) dp = String(d.getDate()).padStart(2,"0") + String(d.getMonth()+1).padStart(2,"0"); }
+      if (e.start_date) { const d = new Date(e.start_date); if (!isNaN(d)) dp = String(d.getDate()).padStart(2,"0") + String(d.getMonth()+1).padStart(2,"0"); }
       return `FR-${dp}-${c}`;
-    }
+    };
+    const initials = me => {
+      const s = (me && (me.name || me.email)) || "";
+      const parts = s.split(/[\s@._-]+/).filter(Boolean);
+      return ((parts[0]?.[0] || "") + (parts[1]?.[0] || parts[0]?.[1] || "")).toUpperCase() || "?";
+    };
 
     const state = {
-      artists: [], events: [], cities: [],
-      tab: "all", cityFilter: new Set(),
-      loading: true, warning: false,
+      me: null, lists: [], currentId: null, detail: null,
+      events: [], tab: "all", cityFilter: new Set(), loading: true,
     };
-    const stamped = new Set(); // event ids whose NEW stamp already animated
+    const stamped = new Set();
+    const canEdit = () => !!(state.detail && state.detail.can_edit);
+    const isOwner = () => !!(state.detail && state.detail.role === "owner");
 
     // ── theme ──────────────────────────────────────────────────
     function applyTheme() {
@@ -242,7 +265,7 @@
     }
     matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme);
 
-    // ── toasts ─────────────────────────────────────────────────
+    // ── toast / dialogs ────────────────────────────────────────
     function toast(msg, icon = "ph-check", color = "var(--fr-success)") {
       const t = document.createElement("div");
       t.className = "fr-toast";
@@ -251,327 +274,356 @@
       $("#toasts").appendChild(t);
       setTimeout(() => t.remove(), 4200);
     }
-
-    // ── dialog ─────────────────────────────────────────────────
-    function confirmDialog({ title, body, confirmLabel, onConfirm }) {
+    function modal(inner) {
       const root = $("#dialog-root");
-      root.innerHTML = `
-        <div class="dialog-backdrop">
-          <div class="dialog">
-            <span class="dialog-title">${esc(title)}</span>
-            <p class="dialog-body" style="margin:0">${esc(body)}</p>
-            <div class="dialog-actions">
-              <button class="btn btn-secondary" data-act="cancel">Keep tracking</button>
-              <button class="btn" data-act="ok" style="color:var(--fr-danger);border-color:color-mix(in srgb, var(--fr-danger) 70%, transparent)"><i class="ph ph-trash"></i> ${esc(confirmLabel)}</button>
-            </div>
-          </div>
-        </div>`;
+      root.innerHTML = `<div class="dialog-backdrop"><div class="dialog">${inner}</div></div>`;
       const close = () => { root.innerHTML = ""; };
-      root.querySelector('[data-act="cancel"]').onclick = close;
       root.querySelector(".dialog-backdrop").onclick = e => { if (e.target === e.currentTarget) close(); };
+      return { root, close };
+    }
+    function confirmDialog({ title, body, confirmLabel, danger = true, onConfirm }) {
+      const { root, close } = modal(`
+        <span class="dialog-title">${esc(title)}</span>
+        <p class="dialog-body" style="margin:0">${esc(body)}</p>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" data-act="cancel">Cancel</button>
+          <button class="btn" data-act="ok" ${danger ? 'style="color:var(--fr-danger);border-color:color-mix(in srgb, var(--fr-danger) 70%, transparent)"' : "class=\"btn btn-primary\""}>${esc(confirmLabel)}</button>
+        </div>`);
+      root.querySelector('[data-act="cancel"]').onclick = close;
       root.querySelector('[data-act="ok"]').onclick = async () => { close(); await onConfirm(); };
     }
-
-    // ── rendering ──────────────────────────────────────────────
-    function render() {
-      renderArtists();
-      renderConcerts();
-      renderFilterButton();
-      renderDefaultCityOptions();
+    function promptDialog({ title, label, value = "", confirmLabel, onConfirm }) {
+      const { root, close } = modal(`
+        <span class="dialog-title">${esc(title)}</span>
+        <div class="field"><label>${esc(label)}</label><input class="input" id="pd-input" value="${esc(value)}" /></div>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" data-act="cancel">Cancel</button>
+          <button class="btn btn-primary" data-act="ok">${esc(confirmLabel)}</button>
+        </div>`);
+      const input = root.querySelector("#pd-input");
+      input.focus(); input.select();
+      const go = async () => { const v = input.value.trim(); if (!v) return; close(); await onConfirm(v); };
+      root.querySelector('[data-act="cancel"]').onclick = close;
+      root.querySelector('[data-act="ok"]').onclick = go;
+      input.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
     }
 
+    // ── data loading ───────────────────────────────────────────
+    async function boot() {
+      applyTheme();
+      // editor invite link: /?join=<token>
+      const params = new URLSearchParams(location.search);
+      const joinToken = params.get("join");
+      try { state.me = await api("/me"); } catch { state.me = null; }
+      renderTopbar();
+
+      if (joinToken) {
+        try {
+          const res = await api("/shares/join", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: joinToken }) });
+          localStorage.setItem("fr-current-list", res.list_id);
+          toast(`You're now an editor of "${res.name}"`, "ph-users", "var(--color-accent)");
+        } catch (e) {
+          toast(e.status === 400 ? "That's a view-only link." : "That invite link isn't live anymore.", "ph-warning", "var(--fr-danger)");
+        }
+        history.replaceState({}, "", "/");
+      }
+      await loadLists();
+    }
+
+    async function loadLists() {
+      state.lists = await api("/lists");
+      const saved = +localStorage.getItem("fr-current-list");
+      let cur = state.lists.find(l => l.id === saved)
+        || state.lists.find(l => l.is_default)
+        || state.lists[0];
+      if (!cur) { renderListBar(); return; }
+      await selectList(cur.id);
+    }
+
+    async function selectList(id) {
+      state.currentId = id;
+      localStorage.setItem("fr-current-list", id);
+      state.loading = true;
+      closeMenus();
+      renderListBar(); renderArtists(); renderConcerts();
+      try {
+        const [detail, events] = await Promise.all([api(`/lists/${id}`), api(`/lists/${id}/events`)]);
+        state.detail = detail; state.events = events; state.loading = false;
+      } catch (e) {
+        state.loading = false;
+        toast("Couldn't open that list.", "ph-warning", "var(--fr-danger)");
+      }
+      render();
+    }
+
+    async function reloadCurrent() {
+      const [detail, events] = await Promise.all([api(`/lists/${state.currentId}`), api(`/lists/${state.currentId}/events`)]);
+      state.detail = detail; state.events = events;
+      // refresh the lists sidebar counts too
+      state.lists = await api("/lists");
+      render();
+    }
+
+    function render() { renderListBar(); renderArtists(); renderConcerts(); renderFilterButton(); }
+
+    // ── topbar / list bar ──────────────────────────────────────
+    function renderTopbar() {
+      $("#avatar").textContent = initials(state.me);
+      $("#p-avatar").textContent = initials(state.me);
+      if (state.me) {
+        $("#me-name").textContent = state.me.name || state.me.email;
+        $("#me-email").textContent = state.me.email;
+        $("#p-name").textContent = state.me.name || "Your account";
+        $("#p-email").textContent = state.me.email;
+      }
+    }
+
+    function renderListBar() {
+      const d = state.detail;
+      $("#cur-list-name").textContent = d ? d.name : (state.lists.length ? "…" : "No lists");
+      const chip = $("#cur-list-role");
+      if (d && d.role) { chip.hidden = false; chip.textContent = d.role; chip.classList.toggle("owner", d.role === "owner"); }
+      else chip.hidden = true;
+      $("#btn-share-2").hidden = !isOwner();
+      $("#btn-rename").hidden = !isOwner();
+      $("#btn-delete").hidden = !(isOwner() && d && !d.is_default);
+      $("#mi-share").hidden = !isOwner();
+      $("#add-block").hidden = !canEdit();
+    }
+
+    function renderListMenu() {
+      const m = $("#list-menu");
+      m.innerHTML = state.lists.map(l => `
+        <button class="fr-menu-item ${l.id === state.currentId ? "active" : ""}" data-list="${l.id}">
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
+          ${l.role !== "owner" ? `<span class="fr-rolechip">${esc(l.role)}</span>` : ""}
+          <span class="fr-artist-count">${l.artist_count}</span>
+        </button>`).join("") + `
+        <div style="border-top:1px solid var(--color-divider);margin-top:2.8px;padding-top:2.8px">
+          <button class="fr-menu-item" data-new="1"><i class="ph ph-plus" style="color:var(--color-accent)"></i> New list</button>
+        </div>`;
+      m.querySelectorAll("[data-list]").forEach(b => b.onclick = () => selectList(+b.dataset.list));
+      m.querySelector("[data-new]").onclick = createList;
+    }
+
+    // ── artists / concerts (unchanged visuals, list-scoped data) ─
     function renderArtists() {
       const box = $("#artists");
-      $("#artist-count").textContent = state.loading ? "" : state.artists.length;
+      const arts = state.detail ? state.detail.artists : [];
+      $("#artist-count").textContent = state.loading ? "" : arts.length;
       if (state.loading) {
-        box.innerHTML = `<div style="display:flex;flex-direction:column;gap:5.6px">${
-          Array.from({length:4}).map(()=>`<div class="fr-skel" style="height:38px;border-radius:8px"></div>`).join("")}</div>`;
+        box.innerHTML = `<div style="display:flex;flex-direction:column;gap:5.6px">${Array.from({length:4}).map(()=>`<div class="fr-skel" style="height:38px;border-radius:8px"></div>`).join("")}</div>`;
         return;
       }
-      if (!state.artists.length) {
-        box.innerHTML = `<div class="fr-empty sm">
-          <i class="ph ph-magnifying-glass"></i>
-          <span class="h">No artists yet</span>
-          <span class="text-muted" style="font-size:13px">Add one and Frontrow starts watching for shows.</span>
-          <button class="btn btn-primary" id="empty-add"><i class="ph ph-plus"></i> Add your first artist</button>
-        </div>`;
-        $("#empty-add").onclick = () => $("#fr-add").focus();
+      if (!arts.length) {
+        box.innerHTML = canEdit()
+          ? `<div class="fr-empty sm"><i class="ph ph-magnifying-glass"></i><span class="h">No artists yet</span><span class="text-muted" style="font-size:13px">Add one and Frontrow starts watching for shows.</span><button class="btn btn-primary" id="empty-add"><i class="ph ph-plus"></i> Add your first artist</button></div>`
+          : `<div class="fr-empty sm"><i class="ph ph-magnifying-glass"></i><span class="h">No artists yet</span><span class="text-muted" style="font-size:13px">The owner hasn't added anyone to this list.</span></div>`;
+        const ea = $("#empty-add"); if (ea) ea.onclick = () => $("#fr-add").focus();
         return;
       }
-      box.innerHTML = `<div style="display:flex;flex-direction:column;gap:2.8px">${
-        state.artists.map(a => `
-          <div class="fr-artist-row">
-            <span class="fr-artist-name">${esc(a.name)}</span>
-            <span class="fr-artist-count">${a.event_count}</span>
-            <button class="btn btn-ghost btn-icon fr-rm" data-id="${a.id}" data-name="${esc(a.name)}" aria-label="Remove artist"><i class="ph ph-trash" style="font-size:15px"></i></button>
-          </div>`).join("")}</div>`;
+      box.innerHTML = `<div style="display:flex;flex-direction:column;gap:2.8px">${arts.map(a => `
+        <div class="fr-artist-row">
+          <span class="fr-artist-name">${esc(a.name)}</span>
+          <span class="fr-artist-count">${a.event_count}</span>
+          ${canEdit() ? `<button class="btn btn-ghost btn-icon fr-rm" data-id="${a.id}" data-name="${esc(a.name)}" aria-label="Remove artist"><i class="ph ph-trash" style="font-size:15px"></i></button>` : ""}
+        </div>`).join("")}</div>`;
       box.querySelectorAll(".fr-rm").forEach(b => b.onclick = () => removeArtist(+b.dataset.id, b.dataset.name));
     }
 
-    function visibleEvents() {
-      let ev = state.events;
-      if (state.cityFilter.size) ev = ev.filter(e => e.city && state.cityFilter.has(e.city));
-      return ev;
-    }
+    const inCity = () => state.cityFilter.size ? state.events.filter(e => e.city && state.cityFilter.has(e.city)) : state.events;
 
     function renderConcerts() {
-      const inCity = visibleEvents();
-      const countAll = inCity.length;
-      const countNew = inCity.filter(e => e.is_new).length;
-      $("#count-all").textContent = countAll;
-      $("#count-new").textContent = countNew;
-
+      const evs = inCity();
+      $("#count-all").textContent = evs.length;
+      $("#count-new").textContent = evs.filter(e => e.is_new).length;
       const box = $("#concerts");
-      if (state.loading) {
-        box.innerHTML = `<div class="fr-grid">${Array.from({length:4}).map(()=>`<div class="fr-skel" style="height:150px"></div>`).join("")}</div>`;
-        return;
-      }
-      const list = state.tab === "new" ? inCity.filter(e => e.is_new) : inCity;
-
+      if (state.loading) { box.innerHTML = `<div class="fr-grid">${Array.from({length:4}).map(()=>`<div class="fr-skel" style="height:150px"></div>`).join("")}</div>`; return; }
+      const list = state.tab === "new" ? evs.filter(e => e.is_new) : evs;
       if (!state.events.length) {
-        box.innerHTML = `<div class="fr-empty">
-          <i class="ph ph-binoculars"></i><span class="h">Nothing announced yet</span>
-          <span class="text-muted" style="font-size:14px;max-width:44ch">Frontrow is watching ${state.artists.length} artist${state.artists.length===1?"":"s"}. The moment a show goes up, it lands here with a NEW stamp.</span>
-          <button class="btn btn-secondary" id="empty-refresh"><i class="ph ph-arrows-clockwise"></i> Check again now</button>
-        </div>`;
-        $("#empty-refresh").onclick = refresh;
-        return;
+        box.innerHTML = `<div class="fr-empty"><i class="ph ph-binoculars"></i><span class="h">Nothing announced yet</span><span class="text-muted" style="font-size:14px;max-width:44ch">Frontrow is watching ${state.detail?state.detail.artists.length:0} artist(s). New shows land here with a NEW stamp.</span><button class="btn btn-secondary" id="empty-refresh"><i class="ph ph-arrows-clockwise"></i> Check again now</button></div>`;
+        $("#empty-refresh").onclick = refresh; return;
       }
       if (!list.length) {
-        box.innerHTML = `<div class="fr-empty">
-          <i class="ph ph-funnel"></i><span class="h">No shows match this filter</span>
-          <span class="text-muted" style="font-size:14px">${state.tab==="new" ? "Nothing new here right now." : "Try a different city or clear the filter."}</span>
-          <button class="btn btn-primary" id="empty-clear"><i class="ph ph-x"></i> Clear filter</button>
-        </div>`;
-        $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.tab = "all"; $$setTab("all"); renderConcerts(); renderFilterButton(); };
-        return;
+        box.innerHTML = `<div class="fr-empty"><i class="ph ph-funnel"></i><span class="h">No shows match this filter</span><span class="text-muted" style="font-size:14px">${state.tab==="new"?"Nothing new here right now.":"Try a different city or clear the filter."}</span><button class="btn btn-primary" id="empty-clear"><i class="ph ph-x"></i> Clear filter</button></div>`;
+        $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.tab = "all"; setTab("all"); renderConcerts(); renderFilterButton(); }; return;
       }
-
       box.innerHTML = `<div class="fr-grid">${list.map(cardHTML).join("")}</div>`;
-      box.querySelectorAll("[data-seen]").forEach(b => b.onclick = () => markSeen(+b.dataset.seen));
+      box.querySelectorAll("[data-seen]").forEach(b => b.onclick = () => markSeen(b.dataset.seen));
     }
 
     function cardHTML(e) {
       const link = safeUrl(e.link);
-      const fresh = e.is_new && !stamped.has(e.id);
-      if (e.is_new) stamped.add(e.id);
-      const stamp = e.is_new
-        ? `<span class="fr-stamp${fresh ? " is-fresh" : ""}">New</span>` : "";
+      const fresh = e.is_new && !stamped.has(e.product_id);
+      if (e.is_new) stamped.add(e.product_id);
+      const stamp = e.is_new ? `<span class="fr-stamp${fresh ? " is-fresh" : ""}">New</span>` : "";
       const seenLine = e.is_new ? "" : `<span class="fr-seen-line"><i class="ph ph-check"></i> Seen</span>`;
-      const markSeenBtn = e.is_new
-        ? `<button class="btn btn-ghost fr-markseen" data-seen="${e.id}"><i class="ph ph-check"></i> Mark seen</button>` : "";
+      const markBtn = e.is_new ? `<button class="btn btn-ghost fr-markseen" data-seen="${esc(e.product_id)}"><i class="ph ph-check"></i> Mark seen</button>` : "";
       const ticket = link
         ? `<a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-ticket"></i> Tickets</a>`
         : `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`;
-      return `
-        <article class="fr-card${e.is_new ? "" : " is-seen"}">
-          <div class="fr-card-main">
-            <div class="fr-kicker-row">
-              <span class="fr-kicker">${esc(e.artist)}</span>
-              <span class="fr-serial">${esc(serial(e))}</span>
-            </div>
-            <span class="fr-title">${esc(e.name || e.artist)}</span>
-            ${seenLine}
-          </div>
-          ${stamp}
-          <div class="fr-perf"></div>
-          <div class="fr-stub">
-            <div class="fr-meta">
-              <span>${esc(dateLine(e.start_date))}</span>
-              <span class="fr-placeline">${esc(placeLine(e))}</span>
-            </div>
-            <div class="fr-stub-actions">${markSeenBtn}${ticket}</div>
-          </div>
-        </article>`;
+      return `<article class="fr-card${e.is_new ? "" : " is-seen"}">
+        <div class="fr-card-main">
+          <div class="fr-kicker-row"><span class="fr-kicker">${esc(e.artist)}</span><span class="fr-serial">${esc(serial(e))}</span></div>
+          <span class="fr-title">${esc(e.name || e.artist)}</span>${seenLine}
+        </div>${stamp}
+        <div class="fr-perf"></div>
+        <div class="fr-stub">
+          <div class="fr-meta"><span>${esc(dateLine(e.start_date))}</span><span class="fr-placeline">${esc(placeLine(e))}</span></div>
+          <div class="fr-stub-actions">${markBtn}${ticket}</div>
+        </div></article>`;
     }
 
     function renderFilterButton() {
       const n = state.cityFilter.size;
       $("#filter-label").textContent = n === 0 ? "All cities" : n === 1 ? [...state.cityFilter][0] : `${n} cities`;
     }
-
     function renderFilterPop() {
       const pop = $("#filter-pop");
-      const counts = {};
-      state.events.forEach(e => { if (e.city) counts[e.city] = (counts[e.city] || 0) + 1; });
-      const rows = state.cities.length ? state.cities.map(c => {
+      const counts = {}; state.events.forEach(e => { if (e.city) counts[e.city] = (counts[e.city]||0)+1; });
+      const cities = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
+      const rows = cities.length ? cities.map(c => {
         const on = state.cityFilter.has(c);
-        return `<label class="radio" style="justify-content:flex-start;gap:8.4px;padding:5.6px;border-radius:6px;${on ? "background:color-mix(in srgb, var(--color-accent) 12%, transparent)" : ""}">
-          <input type="checkbox" data-city="${esc(c)}" ${on ? "checked" : ""}>
-          <span class="dot" style="border-radius:4px"></span>
+        return `<label class="radio" style="justify-content:flex-start;gap:8.4px;padding:5.6px;border-radius:6px;${on?"background:color-mix(in srgb, var(--color-accent) 12%, transparent)":""}">
+          <input type="checkbox" data-city="${esc(c)}" ${on?"checked":""}><span class="dot" style="border-radius:4px"></span>
           <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c)}</span>
-          <span style="font-family:var(--fr-mono);font-size:10px;color:color-mix(in srgb, var(--color-text) 42%, transparent)">${counts[c] || 0}</span>
-        </label>`;
+          <span style="font-family:var(--fr-mono);font-size:10px;color:color-mix(in srgb, var(--color-text) 42%, transparent)">${counts[c]}</span></label>`;
       }).join("") : `<span class="text-muted" style="font-size:13px;padding:5.6px">No cities yet.</span>`;
-      pop.innerHTML = `
-        <div class="fr-city">${rows}</div>
+      pop.innerHTML = `<div class="fr-city">${rows}</div>
         <div style="display:flex;gap:5.6px;align-items:center;border-top:1px solid var(--color-divider);padding-top:8.4px">
           <button class="btn btn-ghost" data-act="all">All cities</button>
-          <button class="btn btn-primary" data-act="done" style="margin-left:auto">Done</button>
-        </div>`;
-      pop.querySelectorAll("input[data-city]").forEach(i => i.onchange = () => {
-        if (i.checked) state.cityFilter.add(i.dataset.city); else state.cityFilter.delete(i.dataset.city);
-        renderConcerts(); renderFilterButton();
-      });
+          <button class="btn btn-primary" data-act="done" style="margin-left:auto">Done</button></div>`;
+      pop.querySelectorAll("input[data-city]").forEach(i => i.onchange = () => { i.checked ? state.cityFilter.add(i.dataset.city) : state.cityFilter.delete(i.dataset.city); renderConcerts(); renderFilterButton(); });
       pop.querySelector('[data-act="all"]').onclick = () => { state.cityFilter.clear(); renderFilterPop(); renderConcerts(); renderFilterButton(); };
       pop.querySelector('[data-act="done"]').onclick = () => toggleFilter(false);
     }
 
-    function renderDefaultCityOptions() {
-      const sel = $("#default-city");
-      const cur = localStorage.getItem("fr-default-city") || "";
-      sel.innerHTML = `<option value="">No default — show every city</option>` +
-        state.cities.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-      sel.value = state.cities.includes(cur) ? cur : "";
-    }
-
     // ── actions ────────────────────────────────────────────────
-    async function load() {
-      try {
-        const [artists, events, cities] = await Promise.all([
-          api("/artists"), api("/events"), api("/cities"),
-        ]);
-        state.artists = artists; state.events = events; state.cities = cities;
-        state.loading = false;
-        // apply default-city preference on first load only
-        if (!load._applied) {
-          const dc = localStorage.getItem("fr-default-city");
-          if (dc && cities.includes(dc)) state.cityFilter.add(dc);
-          load._applied = true;
-        }
-      } catch (err) {
-        state.loading = false;
-        toast("Couldn't load your list — check your connection.", "ph-wifi-slash", "var(--fr-danger)");
-      }
-      render();
-    }
-
     async function addArtist() {
-      const input = $("#fr-add");
-      const name = input.value.trim();
+      const input = $("#fr-add"); const name = input.value.trim();
       $("#add-warning").innerHTML = "";
       if (!name) { input.style.borderColor = "var(--fr-danger)"; input.focus(); return; }
       input.style.borderColor = "";
-      const btn = $("#btn-add");
-      btn.disabled = true;
+      const btn = $("#btn-add"); btn.disabled = true;
       btn.innerHTML = `<i class="ph ph-spinner" style="animation:frSpin .9s linear infinite"></i> Checking…`;
       try {
-        const res = await api("/artists", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        });
+        const res = await api(`/lists/${state.currentId}/artists`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
         input.value = "";
         if (res && res.warning) {
-          $("#add-warning").innerHTML = `<div class="fr-warning">
-            <i class="ph ph-warning" style="color:var(--fr-danger);margin-top:2px"></i>
-            <span>Couldn't reach the ticket source right now — Frontrow will keep checking and show new shows automatically.</span></div>`;
+          $("#add-warning").innerHTML = `<div class="fr-warning"><i class="ph ph-warning" style="color:var(--fr-danger);margin-top:2px"></i><span>Couldn't reach the ticket source right now — Frontrow will keep checking and show new shows automatically.</span></div>`;
         } else {
           const n = (res && res.concerts_found) || 0;
-          toast(`Tracking ${name} — found ${n} concert${n === 1 ? "" : "s"}`, "ph-ticket", "var(--color-accent)");
+          toast(`Tracking ${name} — found ${n} concert${n===1?"":"s"}`, "ph-ticket", "var(--color-accent)");
         }
-        await load();
-      } catch (err) {
-        toast("Couldn't add that artist — try again.", "ph-warning", "var(--fr-danger)");
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="ph ph-plus"></i> Track`;
-      }
+        await reloadCurrent();
+      } catch (e) {
+        toast(e.status === 403 ? "You can't edit this list." : "Couldn't add that artist — try again.", "ph-warning", "var(--fr-danger)");
+      } finally { btn.disabled = false; btn.innerHTML = `<i class="ph ph-plus"></i> Track`; }
     }
 
     function removeArtist(id, name) {
-      confirmDialog({
-        title: `Stop tracking ${name}?`,
-        body: "Their shows disappear from your list. You can add them back any time — Frontrow will find them again.",
-        confirmLabel: "Remove",
-        onConfirm: async () => {
-          try {
-            await api(`/artists/${id}`, { method: "DELETE" });
-            toast(`Removed ${name}`, "ph-trash", "var(--fr-danger)");
-            await load();
-          } catch { toast("Couldn't remove that artist.", "ph-warning", "var(--fr-danger)"); }
-        },
-      });
+      confirmDialog({ title: `Remove ${name} from "${state.detail.name}"?`, body: "Their shows disappear from this list. You can add them back any time.", confirmLabel: "Remove", onConfirm: async () => {
+        try { await api(`/lists/${state.currentId}/artists/${id}`, { method: "DELETE" }); toast(`Removed ${name}`, "ph-trash", "var(--fr-danger)"); await reloadCurrent(); }
+        catch { toast("Couldn't remove that artist.", "ph-warning", "var(--fr-danger)"); }
+      }});
     }
 
-    async function markSeen(id) {
-      const ev = state.events.find(e => e.id === id);
-      if (!ev) return;
-      try {
-        await api(`/events/${id}/seen`, { method: "POST" });
-        ev.is_new = false;
-        renderConcerts();
-        toast(`Marked as seen — ${ev.artist}`, "ph-check", "var(--fr-success)");
+    async function markSeen(productId) {
+      const ev = state.events.find(e => e.product_id === productId); if (!ev) return;
+      try { await api("/events/seen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_id: productId }) });
+        ev.is_new = false; renderConcerts(); toast(`Marked as seen — ${ev.artist}`, "ph-check", "var(--fr-success)");
       } catch { toast("Couldn't update that show.", "ph-warning", "var(--fr-danger)"); }
     }
 
     async function refresh() {
       toast("Checking the ticket sources…", "ph-arrows-clockwise", "var(--color-accent)");
-      try { await api("/scrape", { method: "POST" }); await load(); toast("Up to date", "ph-check", "var(--fr-success)"); }
+      try { await api("/scrape", { method: "POST" }); await reloadCurrent(); toast("Up to date", "ph-check", "var(--fr-success)"); }
       catch { toast("Couldn't refresh right now.", "ph-warning", "var(--fr-danger)"); }
     }
 
-    async function wipeAll() {
-      confirmDialog({
-        title: "Remove all artists?",
-        body: "This stops watching everything and clears your list. It can't be undone.",
-        confirmLabel: "Remove all",
-        onConfirm: async () => {
-          try {
-            await Promise.all(state.artists.map(a => api(`/artists/${a.id}`, { method: "DELETE" })));
-            toast("Cleared your list", "ph-trash", "var(--fr-danger)");
-            showView("dashboard"); await load();
-          } catch { toast("Couldn't clear the list.", "ph-warning", "var(--fr-danger)"); }
-        },
+    function createList() {
+      closeMenus();
+      promptDialog({ title: "New list", label: "List name", confirmLabel: "Create", onConfirm: async v => {
+        try { const l = await api("/lists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: v }) });
+          state.lists.push(l); await selectList(l.id); toast(`Created "${v}"`, "ph-check", "var(--fr-success)"); }
+        catch { toast("Couldn't create the list.", "ph-warning", "var(--fr-danger)"); }
+      }});
+    }
+    function renameList() {
+      promptDialog({ title: "Rename list", label: "List name", value: state.detail.name, confirmLabel: "Save", onConfirm: async v => {
+        try { await api(`/lists/${state.currentId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: v }) }); await reloadCurrent(); toast("List renamed", "ph-check", "var(--fr-success)"); }
+        catch { toast("Couldn't rename the list.", "ph-warning", "var(--fr-danger)"); }
+      }});
+    }
+    function deleteList() {
+      confirmDialog({ title: `Delete "${state.detail.name}"?`, body: "The list and its sharing links go away. The artists stay in the catalog. This can't be undone.", confirmLabel: "Delete list", onConfirm: async () => {
+        try { await api(`/lists/${state.currentId}`, { method: "DELETE" }); toast("List deleted", "ph-trash", "var(--fr-danger)");
+          localStorage.removeItem("fr-current-list"); await loadLists(); }
+        catch { toast("Couldn't delete the list.", "ph-warning", "var(--fr-danger)"); }
+      }});
+    }
+
+    // ── share dialog ───────────────────────────────────────────
+    async function openShare() {
+      closeMenus();
+      let shares = [];
+      try { shares = await api(`/lists/${state.currentId}/shares`); } catch {}
+      const origin = location.origin;
+      const urlFor = s => s.role === "editor" ? `${origin}/?join=${s.token}` : `${origin}/s/${s.token}`;
+      const rowsHtml = shares.length ? shares.map(s => `
+        <div style="display:flex;gap:5.6px;align-items:center;flex-wrap:wrap;padding:8.4px;border-radius:8px;background:var(--color-bg)">
+          <span class="fr-rolechip ${s.role==='editor'?'owner':''}">${s.role==='editor'?'Can edit':'View only'}</span>
+          <input class="input" readonly value="${esc(urlFor(s))}" style="flex:1 1 180px;font-family:var(--fr-mono);font-size:11.5px" data-url />
+          <button class="btn btn-secondary btn-icon" data-copy="${esc(urlFor(s))}" title="Copy"><i class="ph ph-copy"></i></button>
+          <button class="btn btn-ghost btn-icon" data-revoke="${s.id}" title="Revoke" style="color:var(--fr-danger)"><i class="ph ph-link-break"></i></button>
+        </div>`).join("") : `<span class="text-muted" style="font-size:13px">No links yet. Create one below.</span>`;
+      const { root, close } = modal(`
+        <span class="dialog-title">Share "${esc(state.detail.name)}"</span>
+        <p class="dialog-body" style="margin:0">A <b>view</b> link is public and read-only. An <b>editor</b> link lets a signed-in, invited person add and remove artists.</p>
+        <div style="display:flex;flex-direction:column;gap:8.4px" id="share-rows">${rowsHtml}</div>
+        <div class="dialog-actions" style="justify-content:flex-start">
+          <button class="btn btn-secondary" data-create="viewer"><i class="ph ph-eye"></i> Create view link</button>
+          <button class="btn btn-secondary" data-create="editor"><i class="ph ph-pencil-simple"></i> Create editor link</button>
+          <button class="btn btn-primary" data-act="done" style="margin-left:auto">Done</button>
+        </div>`);
+      const wire = () => {
+        root.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.copy); toast("Link copied", "ph-copy", "var(--color-accent)"); });
+        root.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => { try { await api(`/shares/${b.dataset.revoke}`, { method: "DELETE" }); close(); openShare(); } catch { toast("Couldn't revoke.", "ph-warning", "var(--fr-danger)"); } });
+      };
+      wire();
+      root.querySelectorAll("[data-create]").forEach(b => b.onclick = async () => {
+        try { await api(`/lists/${state.currentId}/shares`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: b.dataset.create }) }); close(); openShare(); }
+        catch { toast("Couldn't create the link.", "ph-warning", "var(--fr-danger)"); }
       });
+      root.querySelector('[data-act="done"]').onclick = close;
     }
 
-    // ── ui plumbing ────────────────────────────────────────────
-    function toggleMenu(open) {
-      const m = $("#menu"); const b = $("#btn-menu");
-      const show = open ?? m.hidden;
-      m.hidden = !show; b.setAttribute("aria-expanded", show);
-    }
-    function toggleFilter(open) {
-      const p = $("#filter-pop"); const b = $("#btn-filter");
-      const show = open ?? p.hidden;
-      if (show) renderFilterPop();
-      p.hidden = !show; b.setAttribute("aria-expanded", show);
-      b.style.boxShadow = show ? "inset 0 0 0 1px var(--color-accent)" : "";
-    }
-    function $$setTab(v) { document.querySelectorAll('input[name="fr-tab"]').forEach(i => i.checked = i.value === v); }
-
-    function showView(v) {
-      $("#view-dashboard").hidden = v !== "dashboard";
-      $("#view-profile").hidden = v !== "profile";
-      toggleMenu(false);
-    }
+    // ── menus / views ──────────────────────────────────────────
+    function closeMenus() { $("#menu").hidden = true; $("#list-menu").hidden = true; toggleFilter(false); }
+    function setTab(v) { document.querySelectorAll('input[name="fr-tab"]').forEach(i => i.checked = i.value === v); }
+    function toggleFilter(open) { const p = $("#filter-pop"), b = $("#btn-filter"); const show = open ?? p.hidden; if (show) renderFilterPop(); p.hidden = !show; b.setAttribute("aria-expanded", show); b.style.boxShadow = show ? "inset 0 0 0 1px var(--color-accent)" : ""; }
+    function showView(v) { $("#view-dashboard").hidden = v !== "dashboard"; $("#view-profile").hidden = v !== "profile"; closeMenus(); }
 
     // ── events ─────────────────────────────────────────────────
     $("#btn-add").onclick = addArtist;
     $("#fr-add").addEventListener("keydown", e => { if (e.key === "Enter") addArtist(); });
-    $("#btn-refresh").onclick = refresh;
-    $("#btn-refresh-2").onclick = refresh;
-    $("#btn-menu").onclick = e => { e.stopPropagation(); toggleMenu(); };
+    $("#btn-refresh").onclick = refresh; $("#btn-refresh-2").onclick = refresh;
+    $("#btn-menu").onclick = e => { e.stopPropagation(); const m = $("#menu"); const s = m.hidden; closeMenus(); m.hidden = !s; };
+    $("#btn-listswitch").onclick = e => { e.stopPropagation(); const m = $("#list-menu"); const s = m.hidden; closeMenus(); if (s) renderListMenu(); m.hidden = !s; };
+    $("#btn-share-2").onclick = openShare; $("#mi-share").onclick = openShare;
+    $("#btn-rename").onclick = renameList; $("#btn-delete").onclick = deleteList;
     $("#mi-profile").onclick = () => showView("profile");
-    $("#mi-share").onclick = () => { toggleMenu(false); toast("Sharing is coming soon.", "ph-share-network", "var(--color-accent)"); };
     $("#btn-back").onclick = () => showView("dashboard");
-    $("#btn-wipe").onclick = wipeAll;
     $("#btn-filter").onclick = e => { e.stopPropagation(); toggleFilter(); };
     document.querySelectorAll('input[name="fr-tab"]').forEach(i => i.onchange = () => { state.tab = i.value; renderConcerts(); });
     $("#theme-seg").addEventListener("change", e => { localStorage.setItem("fr-theme", e.target.value); applyTheme(); });
-    $("#default-city").onchange = e => {
-      localStorage.setItem("fr-default-city", e.target.value);
-      toast(e.target.value ? `Default city set to ${e.target.value}` : "Default city cleared", "ph-map-pin", "var(--color-accent)");
-    };
     document.addEventListener("click", e => {
-      if (!e.target.closest("#menu") && !e.target.closest("#btn-menu")) toggleMenu(false);
+      if (!e.target.closest("#menu") && !e.target.closest("#btn-menu")) $("#menu").hidden = true;
+      if (!e.target.closest("#list-menu") && !e.target.closest("#btn-listswitch")) $("#list-menu").hidden = true;
       if (!e.target.closest("#filter-pop") && !e.target.closest("#btn-filter")) toggleFilter(false);
     });
 
-    // ── boot ───────────────────────────────────────────────────
-    applyTheme();
-    render();
-    load();
+    boot();
   </script>
 </body>
 </html>

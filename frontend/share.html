@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-fr-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Frontrow · Shared list</title>
+  <link rel="stylesheet" href="/nocturne.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <style>
+    :root { --fr-mono: ui-monospace, "SFMono-Regular", Menlo, monospace; --fr-danger:#d4736a; }
+    [data-fr-theme="light"]{ --color-bg:#e8ebf7; --color-surface:#f7f8fe; --color-text:#292b31; --color-accent:#5d5294; --color-divider: color-mix(in srgb, #292b31 18%, transparent); --shadow-sm: 0 0 0 1px #cfd3e5; --fr-danger:#9c4038; }
+    body{margin:0;min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}
+    .hero{padding:22.4px 16.8px;background:radial-gradient(100% 120% at 12% -30%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 60%)}
+    .wrap{max-width:960px;margin:0 auto}
+    .brandrow{display:flex;align-items:center;gap:8.4px}
+    .tick{width:3px;height:13px;background:var(--color-accent);border-radius:2px}
+    .brand{font-family:var(--font-heading);font-size:13px;letter-spacing:.22em;text-transform:uppercase}
+    .grid{display:grid;gap:11.2px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+    .card{position:relative;overflow:hidden;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
+    .cmain{padding:16.8px 16.8px 11.2px;display:flex;flex-direction:column;gap:5.6px;flex:1}
+    .kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent)}
+    .title{font-family:var(--font-heading);font-weight:500;font-size:17px;line-height:1.2;text-wrap:pretty}
+    .perf{position:relative;height:1px;background:repeating-linear-gradient(to right, var(--color-divider) 0 5px, transparent 5px 11px)}
+    .perf::before,.perf::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--color-bg)}
+    .perf::before{left:-7px}.perf::after{right:-7px}
+    .stub{padding:12.6px 16.8px 14px;display:flex;align-items:center;gap:11.2px;flex-wrap:wrap}
+    .meta{flex:1 1 150px;display:flex;flex-direction:column;gap:3px;font-family:var(--fr-mono);font-size:11.5px;letter-spacing:.04em;min-width:0}
+    .place{color:color-mix(in srgb, var(--color-text) 55%, transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .empty{display:flex;flex-direction:column;gap:8.4px;align-items:flex-start;padding:33.6px 22.4px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)}
+    .empty > i{font-size:24px;color:var(--color-accent)}
+    .cta{display:flex;flex-wrap:wrap;align-items:center;gap:11.2px;padding:16.8px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);margin-top:16.8px}
+  </style>
+</head>
+<body>
+  <div class="hero"><div class="wrap" style="display:flex;flex-direction:column;gap:8.4px">
+    <div class="brandrow"><span class="tick"></span><span class="brand">Frontrow</span><span class="tag tag-outline" style="margin-left:auto">Read-only</span></div>
+    <h3 id="heading" style="margin:0">Loading…</h3>
+    <span class="text-muted" id="subhead" style="font-size:14px"></span>
+  </div></div>
+  <div class="wrap" style="padding:16.8px 16.8px 33.6px">
+    <div id="content"></div>
+    <div class="cta">
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1 1 240px">
+        <span style="font-family:var(--font-heading);font-size:15px">Want your own list?</span>
+        <span class="text-muted" style="font-size:13px">Frontrow is invite-only — but this is what it looks like.</span>
+      </div>
+      <a class="btn btn-primary" href="/">See Frontrow <i class="ph ph-arrow-square-out"></i></a>
+    </div>
+  </div>
+
+  <script>
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    const safeUrl = u => (typeof u === "string" && /^https?:\/\//i.test(u)) ? u : null;
+    const WD=["SO","MO","DI","MI","DO","FR","SA"], MO=["JAN","FEB","MRZ","APR","MAI","JUN","JUL","AUG","SEP","OKT","NOV","DEZ"];
+    const dateLine = iso => { if(!iso) return "DATE TBA"; const d=new Date(iso); if(isNaN(d)) return "DATE TBA"; const p=n=>String(n).padStart(2,"0"); return `${WD[d.getDay()]} · ${d.getDate()} ${MO[d.getMonth()]} ${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`; };
+    const place = e => [e.venue, e.city].filter(Boolean).join(" · ").toUpperCase() || "VENUE TBA";
+    (function theme(){ const s=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"; document.documentElement.dataset.frTheme=s; })();
+
+    const token = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
+
+    function card(e) {
+      const link = safeUrl(e.link);
+      const ticket = link ? `<a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-ticket"></i> Tickets</a>` : `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`;
+      return `<article class="card"><div class="cmain"><span class="kicker">${esc(e.artist)}</span><span class="title">${esc(e.name || e.artist)}</span></div>
+        <div class="perf"></div><div class="stub"><div class="meta"><span>${esc(dateLine(e.start_date))}</span><span class="place">${esc(place(e))}</span></div>${ticket}</div></article>`;
+    }
+    function emptyState(icon, h, sub) {
+      return `<div class="empty"><i class="ph ${icon}"></i><span style="font-family:var(--font-heading);font-size:18px">${esc(h)}</span><span class="text-muted" style="font-size:14px">${esc(sub)}</span></div>`;
+    }
+
+    fetch("/api/shared/" + encodeURIComponent(token)).then(r => {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    }).then(data => {
+      document.getElementById("heading").textContent = `${data.owner_name} is going to these`;
+      document.getElementById("subhead").textContent = data.concerts.length
+        ? `${data.concerts.length} upcoming show${data.concerts.length===1?"":"s"} · ${esc(data.list_name)}`
+        : esc(data.list_name);
+      const c = document.getElementById("content");
+      c.innerHTML = data.concerts.length
+        ? `<div class="grid">${data.concerts.map(card).join("")}</div>`
+        : emptyState("ph-ticket", "Nothing on this list yet", "Check back — this page updates itself.");
+    }).catch(() => {
+      document.getElementById("heading").textContent = "This link isn't live anymore";
+      document.getElementById("subhead").textContent = "";
+      document.getElementById("content").innerHTML = emptyState("ph-link-break", "Link revoked or expired", "Whoever shared it has turned the link off. Ask them for a fresh one.");
+    });
+  </script>
+</body>
+</html>
