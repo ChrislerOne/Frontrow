@@ -116,6 +116,52 @@ def test_revoked_share_is_dead(client):
     assert client.get(f"/api/shared/{share['token']}").status_code == 404
 
 
+# ── email invites & shared flags ─────────────────────────────────────────────
+def test_invite_existing_user_adds_member(client):
+    lid = default_list(client, "a@x.com")["id"]
+    default_list(client, "b@x.com")  # b already has an account
+    r = client.post(f"/api/lists/{lid}/invites", json={"email": "b@x.com", "role": "editor"}, headers=H("a@x.com"))
+    assert r.status_code == 200 and r.json()["status"] == "added"
+    shared = [l for l in client.get("/api/lists", headers=H("b@x.com")).json() if l["id"] == lid][0]
+    assert shared["role"] == "editor" and shared["can_edit"] and shared["shared_with_me"]
+
+
+def test_invite_pending_resolves_on_first_login(client):
+    lid = default_list(client, "a@x.com")["id"]
+    assert client.post(f"/api/lists/{lid}/invites", json={"email": "c@x.com", "role": "viewer"}, headers=H("a@x.com")).json()["status"] == "invited"
+    c_lists = client.get("/api/lists", headers=H("c@x.com")).json()  # first login → invite resolves
+    shared = [l for l in c_lists if l["id"] == lid][0]
+    assert shared["role"] == "viewer" and shared["shared_with_me"]
+
+
+def test_owner_sees_shared_out_flag(client):
+    lid = default_list(client, "a@x.com")["id"]
+    assert client.get("/api/lists", headers=H("a@x.com")).json()[0]["shared_out"] is False
+    client.post(f"/api/lists/{lid}/shares", json={"role": "viewer"}, headers=H("a@x.com"))
+    assert client.get("/api/lists", headers=H("a@x.com")).json()[0]["shared_out"] is True
+
+
+def test_remove_member_and_cancel_invite(client):
+    lid = default_list(client, "a@x.com")["id"]
+    default_list(client, "b@x.com")
+    client.post(f"/api/lists/{lid}/invites", json={"email": "b@x.com", "role": "editor"}, headers=H("a@x.com"))
+    b = [m for m in client.get(f"/api/lists/{lid}/members", headers=H("a@x.com")).json()["members"] if m["email"] == "b@x.com"][0]
+    assert client.delete(f"/api/lists/{lid}/members/{b['user_id']}", headers=H("a@x.com")).status_code == 200
+    assert lid not in [l["id"] for l in client.get("/api/lists", headers=H("b@x.com")).json()]
+
+    client.post(f"/api/lists/{lid}/invites", json={"email": "d@x.com"}, headers=H("a@x.com"))
+    iid = client.get(f"/api/lists/{lid}/members", headers=H("a@x.com")).json()["invites"][0]["id"]
+    assert client.delete(f"/api/invites/{iid}", headers=H("a@x.com")).status_code == 200
+    assert client.get(f"/api/lists/{lid}/members", headers=H("a@x.com")).json()["invites"] == []
+
+
+def test_non_owner_cannot_manage_members(client):
+    lid = default_list(client, "a@x.com")["id"]
+    default_list(client, "b@x.com")
+    assert client.get(f"/api/lists/{lid}/members", headers=H("b@x.com")).status_code == 403
+    assert client.post(f"/api/lists/{lid}/invites", json={"email": "z@x.com"}, headers=H("b@x.com")).status_code == 403
+
+
 # ── legacy migration ─────────────────────────────────────────────────────────
 def test_first_user_adopts_existing_catalog(client, session_factory):
     s = session_factory()

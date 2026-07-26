@@ -123,6 +123,20 @@ class ShareLink(Base):
     list: Mapped["ArtistList"] = relationship(back_populates="shares")
 
 
+class ListInvite(Base):
+    """A pending invite by email for someone who hasn't logged in yet. Resolved into a
+    ListMember the first time that email signs in. role ∈ {editor, viewer}."""
+
+    __tablename__ = "list_invites"
+    __table_args__ = (UniqueConstraint("list_id", "email", name="uq_list_email"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    list_id: Mapped[int] = mapped_column(ForeignKey("lists.id"))
+    email: Mapped[str] = mapped_column(String, index=True)
+    role: Mapped[str] = mapped_column(String, default="editor")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class EventSeen(Base):
     """Per-user 'seen' state, keyed by the stable Eventim product_id (not event.id)
     so it survives a cache rebuild."""

@@ -37,12 +37,15 @@
     .fr-warning{display:flex;align-items:flex-start;gap:8.4px;padding:11.2px;border-radius:8px;background:var(--color-surface);box-shadow:0 0 0 1px color-mix(in srgb, var(--fr-danger) 60%, transparent);font-size:13px;animation:frFade .2s ease both}
 
     /* list switcher */
-    .fr-listbar{display:flex;flex-wrap:wrap;align-items:center;gap:8.4px}
-    .fr-listbtn{display:inline-flex;align-items:center;gap:8.4px;background:transparent;border:0;cursor:pointer;color:var(--color-text);padding:4px 6px;border-radius:8px}
-    .fr-listbtn:hover{background:color-mix(in srgb, var(--color-text) 7%, transparent)}
-    .fr-listname{font-family:var(--font-heading);font-weight:500;font-size:22px;letter-spacing:-.015em}
+    .fr-listbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:11.2px}
+    .fr-listbtn{display:inline-flex;align-items:center;gap:10px;background:var(--color-surface);border:1px solid var(--color-divider);cursor:pointer;color:var(--color-text);padding:8px 12px;border-radius:10px;box-shadow:var(--shadow-sm)}
+    .fr-listbtn:hover{border-color:color-mix(in srgb, var(--color-text) 45%, transparent)}
+    .fr-listlead{color:var(--color-accent);font-size:18px;display:flex}
+    .fr-shared-ic{color:var(--color-accent);font-size:15px;display:flex}
+    .fr-listname{font-family:var(--font-heading);font-weight:500;font-size:20px;letter-spacing:-.015em}
     .fr-rolechip{font-family:var(--fr-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;border-radius:5px;border:1px solid var(--color-divider);color:color-mix(in srgb, var(--color-text) 60%, transparent)}
     .fr-rolechip.owner{border-color:var(--color-accent);color:var(--color-accent)}
+    .fr-shrow{display:flex;gap:5.6px;align-items:center;flex-wrap:wrap;padding:7px 8.4px;border-radius:8px;background:var(--color-bg)}
 
     .fr-artist-row{display:flex;align-items:center;gap:8.4px;padding:8.4px 8.4px 8.4px 11.2px;border-radius:8px;background:var(--color-surface)}
     .fr-artist-row:hover{background:var(--color-neutral-800)}
@@ -128,13 +131,18 @@
     <!-- ── DASHBOARD ───────────────────────────────────────────── -->
     <div class="fr-wrap" id="view-dashboard">
       <div class="fr-listbar">
-        <div style="position:relative">
-          <button class="fr-listbtn" id="btn-listswitch" aria-expanded="false">
-            <span class="fr-listname" id="cur-list-name">…</span>
-            <span class="fr-rolechip" id="cur-list-role" hidden></span>
-            <i class="ph ph-caret-down" style="opacity:.6"></i>
-          </button>
-          <div id="list-menu" class="fr-menu left" hidden></div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <span class="fr-mono-note">CURRENT LIST</span>
+          <div style="position:relative">
+            <button class="fr-listbtn" id="btn-listswitch" aria-expanded="false">
+              <span class="fr-listlead"><i class="ph ph-stack"></i></span>
+              <span class="fr-listname" id="cur-list-name">…</span>
+              <span class="fr-shared-ic" id="cur-list-shared" hidden></span>
+              <span class="fr-rolechip" id="cur-list-role" hidden></span>
+              <i class="ph ph-caret-down" style="opacity:.6"></i>
+            </button>
+            <div id="list-menu" class="fr-menu left" hidden></div>
+          </div>
         </div>
         <div style="margin-left:auto;display:flex;gap:5.6px;flex-wrap:wrap">
           <button class="btn btn-secondary" id="btn-share-2" hidden><i class="ph ph-share-network"></i> Share</button>
@@ -384,6 +392,10 @@
       const chip = $("#cur-list-role");
       if (d && d.role) { chip.hidden = false; chip.textContent = d.role; chip.classList.toggle("owner", d.role === "owner"); }
       else chip.hidden = true;
+      const sic = $("#cur-list-shared");
+      if (d && d.shared_with_me) { sic.hidden = false; sic.innerHTML = '<i class="ph ph-users" title="Shared with you"></i>'; }
+      else if (d && d.shared_out) { sic.hidden = false; sic.innerHTML = '<i class="ph ph-share-network" title="You are sharing this"></i>'; }
+      else sic.hidden = true;
       $("#btn-share-2").hidden = !isOwner();
       $("#btn-rename").hidden = !isOwner();
       $("#btn-delete").hidden = !(isOwner() && d && !d.is_default);
@@ -396,6 +408,7 @@
       m.innerHTML = state.lists.map(l => `
         <button class="fr-menu-item ${l.id === state.currentId ? "active" : ""}" data-list="${l.id}">
           <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
+          ${l.shared_with_me ? '<i class="ph ph-users" style="font-size:13px;color:var(--color-accent)" title="Shared with you"></i>' : (l.shared_out ? '<i class="ph ph-share-network" style="font-size:13px;color:var(--color-accent)" title="You are sharing this"></i>' : "")}
           ${l.role !== "owner" ? `<span class="fr-rolechip">${esc(l.role)}</span>` : ""}
           <span class="fr-artist-count">${l.artist_count}</span>
         </button>`).join("") + `
@@ -566,36 +579,73 @@
     // ── share dialog ───────────────────────────────────────────
     async function openShare() {
       closeMenus();
-      let shares = [];
-      try { shares = await api(`/lists/${state.currentId}/shares`); } catch {}
+      const [shares, mem] = await Promise.all([
+        api(`/lists/${state.currentId}/shares`).catch(() => []),
+        api(`/lists/${state.currentId}/members`).catch(() => ({ members: [], invites: [] })),
+      ]);
       const origin = location.origin;
       const urlFor = s => s.role === "editor" ? `${origin}/?join=${s.token}` : `${origin}/s/${s.token}`;
-      const rowsHtml = shares.length ? shares.map(s => `
-        <div style="display:flex;gap:5.6px;align-items:center;flex-wrap:wrap;padding:8.4px;border-radius:8px;background:var(--color-bg)">
+      const linkRows = shares.length ? shares.map(s => `
+        <div class="fr-shrow">
           <span class="fr-rolechip ${s.role==='editor'?'owner':''}">${s.role==='editor'?'Can edit':'View only'}</span>
-          <input class="input" readonly value="${esc(urlFor(s))}" style="flex:1 1 180px;font-family:var(--fr-mono);font-size:11.5px" data-url />
+          <input class="input" readonly value="${esc(urlFor(s))}" style="flex:1 1 150px;font-family:var(--fr-mono);font-size:11.5px" />
           <button class="btn btn-secondary btn-icon" data-copy="${esc(urlFor(s))}" title="Copy"><i class="ph ph-copy"></i></button>
-          <button class="btn btn-ghost btn-icon" data-revoke="${s.id}" title="Revoke" style="color:var(--fr-danger)"><i class="ph ph-link-break"></i></button>
-        </div>`).join("") : `<span class="text-muted" style="font-size:13px">No links yet. Create one below.</span>`;
+          <button class="btn btn-ghost btn-icon" data-revoke="${s.id}" title="Revoke link" style="color:var(--fr-danger)"><i class="ph ph-link-break"></i></button>
+        </div>`).join("") : `<span class="text-muted" style="font-size:13px">No links yet.</span>`;
+      const peopleRows = mem.members.map(m => `
+        <div class="fr-shrow">
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px">${esc(m.email)}${m.is_you ? ' <span class="text-muted">(you)</span>' : ""}</span>
+          <span class="fr-rolechip ${m.role==='owner'?'owner':''}">${esc(m.role)}</span>
+          ${m.role !== "owner" ? `<button class="btn btn-ghost btn-icon" data-rmember="${m.user_id}" title="Remove" style="color:var(--fr-danger)"><i class="ph ph-x"></i></button>` : `<span style="width:36px"></span>`}
+        </div>`).join("") + mem.invites.map(i => `
+        <div class="fr-shrow">
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px">${esc(i.email)} <span class="text-muted">· pending</span></span>
+          <span class="fr-rolechip">${esc(i.role)}</span>
+          <button class="btn btn-ghost btn-icon" data-cancelinv="${i.id}" title="Cancel invite" style="color:var(--fr-danger)"><i class="ph ph-x"></i></button>
+        </div>`).join("");
       const { root, close } = modal(`
         <span class="dialog-title">Share "${esc(state.detail.name)}"</span>
-        <p class="dialog-body" style="margin:0">A <b>view</b> link is public and read-only. An <b>editor</b> link lets a signed-in, invited person add and remove artists.</p>
-        <div style="display:flex;flex-direction:column;gap:8.4px" id="share-rows">${rowsHtml}</div>
-        <div class="dialog-actions" style="justify-content:flex-start">
-          <button class="btn btn-secondary" data-create="viewer"><i class="ph ph-eye"></i> Create view link</button>
-          <button class="btn btn-secondary" data-create="editor"><i class="ph ph-pencil-simple"></i> Create editor link</button>
-          <button class="btn btn-primary" data-act="done" style="margin-left:auto">Done</button>
-        </div>`);
-      const wire = () => {
-        root.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.copy); toast("Link copied", "ph-copy", "var(--color-accent)"); });
-        root.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => { try { await api(`/shares/${b.dataset.revoke}`, { method: "DELETE" }); close(); openShare(); } catch { toast("Couldn't revoke.", "ph-warning", "var(--fr-danger)"); } });
+        <div style="display:flex;flex-direction:column;gap:16.8px;max-height:64vh;overflow:auto">
+          <div style="display:flex;flex-direction:column;gap:8.4px">
+            <h6 style="margin:0">Links</h6>
+            <p class="text-muted" style="margin:0;font-size:12.5px">A <b>view</b> link is public and read-only. An <b>editor</b> link lets a signed-in, invited person add and remove artists.</p>
+            <div style="display:flex;flex-direction:column;gap:5.6px">${linkRows}</div>
+            <div style="display:flex;gap:5.6px;flex-wrap:wrap">
+              <button class="btn btn-secondary" data-create="viewer"><i class="ph ph-eye"></i> View link</button>
+              <button class="btn btn-secondary" data-create="editor"><i class="ph ph-pencil-simple"></i> Editor link</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8.4px">
+            <h6 style="margin:0">People</h6>
+            <div style="display:flex;gap:5.6px;flex-wrap:wrap;align-items:flex-end">
+              <input class="input" id="inv-email" placeholder="Invite by email" autocomplete="off" style="flex:1 1 170px" />
+              <select class="input" id="inv-role" style="width:auto"><option value="editor">Can edit</option><option value="viewer">View only</option></select>
+              <button class="btn btn-primary" id="inv-btn"><i class="ph ph-paper-plane-tilt"></i> Invite</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5.6px">${peopleRows}</div>
+            <span class="text-muted" style="font-size:11.5px">Invited people also need to be on Frontrow's allow-list to sign in.</span>
+          </div>
+        </div>
+        <div class="dialog-actions"><button class="btn btn-primary" data-act="done">Done</button></div>`);
+      const reopen = () => { close(); openShare(); };
+      root.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.copy); toast("Link copied", "ph-copy", "var(--color-accent)"); });
+      root.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => { await api(`/shares/${b.dataset.revoke}`, { method: "DELETE" }).catch(() => {}); reopen(); });
+      root.querySelectorAll("[data-create]").forEach(b => b.onclick = async () => { await api(`/lists/${state.currentId}/shares`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: b.dataset.create }) }).catch(() => toast("Couldn't create the link.", "ph-warning", "var(--fr-danger)")); reopen(); });
+      root.querySelectorAll("[data-rmember]").forEach(b => b.onclick = async () => { await api(`/lists/${state.currentId}/members/${b.dataset.rmember}`, { method: "DELETE" }).catch(() => {}); reopen(); });
+      root.querySelectorAll("[data-cancelinv]").forEach(b => b.onclick = async () => { await api(`/invites/${b.dataset.cancelinv}`, { method: "DELETE" }).catch(() => {}); reopen(); });
+      const doInvite = async () => {
+        const email = root.querySelector("#inv-email").value.trim();
+        if (!email) { root.querySelector("#inv-email").focus(); return; }
+        const role = root.querySelector("#inv-role").value;
+        try {
+          const r = await api(`/lists/${state.currentId}/invites`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, role }) });
+          toast(r.status === "added" ? `Added ${email}` : `Invited ${email}`, "ph-paper-plane-tilt", "var(--color-accent)");
+          reopen();
+        } catch (e) { toast(e.status === 400 ? "Enter a valid email." : "Couldn't send that invite.", "ph-warning", "var(--fr-danger)"); }
       };
-      wire();
-      root.querySelectorAll("[data-create]").forEach(b => b.onclick = async () => {
-        try { await api(`/lists/${state.currentId}/shares`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: b.dataset.create }) }); close(); openShare(); }
-        catch { toast("Couldn't create the link.", "ph-warning", "var(--fr-danger)"); }
-      });
-      root.querySelector('[data-act="done"]').onclick = close;
+      root.querySelector("#inv-btn").onclick = doInvite;
+      root.querySelector("#inv-email").addEventListener("keydown", e => { if (e.key === "Enter") doInvite(); });
+      root.querySelector('[data-act="done"]').onclick = async () => { close(); try { state.lists = await api("/lists"); state.detail = await api(`/lists/${state.currentId}`); render(); } catch {} };
     }
 
     // ── menus / views ──────────────────────────────────────────

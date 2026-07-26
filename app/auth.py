@@ -4,7 +4,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from .database import get_db
-from .models import Artist, ArtistList, ListArtist, ListMember, User
+from .models import Artist, ArtistList, ListArtist, ListInvite, ListMember, User
 
 # For local dev without the oauth2-proxy in front. In production this is unset and
 # the X-Forwarded-Email header (set by oauth2-proxy) is required.
@@ -44,7 +44,25 @@ def current_user(
         db.commit()
         db.refresh(user)
         _seed_default_list(db, user)
+    _resolve_invites(db, user)
     return user
+
+
+def _resolve_invites(db: Session, user: User) -> None:
+    """Turn any pending email invites for this user into real list memberships."""
+    pending = db.query(ListInvite).filter(ListInvite.email == user.email).all()
+    if not pending:
+        return
+    for inv in pending:
+        exists = (
+            db.query(ListMember)
+            .filter_by(list_id=inv.list_id, user_id=user.id)
+            .first()
+        )
+        if not exists:
+            db.add(ListMember(list_id=inv.list_id, user_id=user.id, role=inv.role))
+        db.delete(inv)
+    db.commit()
 
 
 # ── Permissions ─────────────────────────────────────────────────────────────

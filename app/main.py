@@ -10,7 +10,9 @@ from sqlalchemy.orm import Session
 
 from .auth import current_user, require_edit, require_owner, require_view, role_of
 from .database import Base, engine, get_db
-from .models import Artist, ArtistList, Event, EventSeen, ListArtist, ListMember, ShareLink, User
+from .models import (
+    Artist, ArtistList, Event, EventSeen, ListArtist, ListInvite, ListMember, ShareLink, User,
+)
 from .scheduler import start_scheduler
 from .scraper import scrape_all, scrape_artist
 
@@ -42,6 +44,11 @@ class JoinIn(BaseModel):
 
 class SeenIn(BaseModel):
     product_id: str
+
+
+class InviteIn(BaseModel):
+    email: str
+    role: str = "editor"
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -87,6 +94,12 @@ def _list_events(db: Session, lst: ArtistList, user: User | None) -> list[dict]:
 
 
 def _list_summary(db: Session, lst: ArtistList, role: str) -> dict:
+    invite_count = (
+        db.query(ListInvite).filter_by(list_id=lst.id).count() if role == "owner" else 0
+    )
+    shared_out = role == "owner" and (
+        any(s.enabled for s in lst.shares) or len(lst.members) > 1 or invite_count > 0
+    )
     return {
         "id": lst.id,
         "name": lst.name,
@@ -94,6 +107,8 @@ def _list_summary(db: Session, lst: ArtistList, role: str) -> dict:
         "role": role,
         "can_edit": role in ("owner", "editor"),
         "artist_count": len(lst.artists_assoc),
+        "shared_with_me": role != "owner",  # someone shared this list with me
+        "shared_out": shared_out,           # I own it and it's shared with others
     }
 
 
@@ -261,6 +276,80 @@ def join_share(payload: JoinIn, user: User = Depends(current_user), db: Session 
         db.add(ListMember(list_id=lst.id, user_id=user.id, role="editor"))
         db.commit()
     return {"list_id": lst.id, "name": lst.name}
+
+
+# ── members / email invites ──────────────────────────────────────────────────
+@app.get("/api/lists/{list_id}/members")
+def list_members(list_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    lst = require_owner(db, user, list_id)
+    members = []
+    for m in lst.members:
+        u = db.get(User, m.user_id)
+        members.append({
+            "user_id": m.user_id,
+            "email": u.email if u else "?",
+            "name": u.name if u else None,
+            "role": m.role,
+            "is_you": m.user_id == user.id,
+        })
+    members.sort(key=lambda x: (x["role"] != "owner", x["email"]))
+    invites = [
+        {"id": inv.id, "email": inv.email, "role": inv.role}
+        for inv in db.query(ListInvite).filter_by(list_id=lst.id)
+    ]
+    return {"members": members, "invites": invites}
+
+
+@app.post("/api/lists/{list_id}/invites")
+def invite_member(list_id: int, payload: InviteIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    lst = require_owner(db, user, list_id)
+    email = payload.email.strip().lower()
+    if "@" not in email:
+        raise HTTPException(400, "Enter a valid email")
+    if email == user.email:
+        raise HTTPException(400, "You already own this list")
+    role = payload.role if payload.role in ("editor", "viewer") else "editor"
+
+    existing = db.query(User).filter(User.email == email).first()
+    if existing:  # already has an account → add them straight away
+        m = db.query(ListMember).filter_by(list_id=lst.id, user_id=existing.id).first()
+        if m:
+            m.role = role
+        else:
+            db.add(ListMember(list_id=lst.id, user_id=existing.id, role=role))
+        db.commit()
+        return {"status": "added", "email": email, "role": role}
+
+    inv = db.query(ListInvite).filter_by(list_id=lst.id, email=email).first()
+    if inv:
+        inv.role = role
+    else:
+        db.add(ListInvite(list_id=lst.id, email=email, role=role))
+    db.commit()
+    return {"status": "invited", "email": email, "role": role}
+
+
+@app.delete("/api/lists/{list_id}/members/{member_user_id}")
+def remove_member(list_id: int, member_user_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    lst = require_owner(db, user, list_id)
+    if member_user_id == lst.owner_id:
+        raise HTTPException(400, "The owner can't be removed")
+    m = db.query(ListMember).filter_by(list_id=lst.id, user_id=member_user_id).first()
+    if m:
+        db.delete(m)
+        db.commit()
+    return {"removed": member_user_id}
+
+
+@app.delete("/api/invites/{invite_id}")
+def cancel_invite(invite_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    inv = db.get(ListInvite, invite_id)
+    if not inv:
+        raise HTTPException(404, "Invite not found")
+    require_owner(db, user, inv.list_id)
+    db.delete(inv)
+    db.commit()
+    return {"cancelled": invite_id}
 
 
 # Public (no auth) — must be added to oauth2-proxy --skip-auth-route.
