@@ -20,9 +20,16 @@ services:
       - OAUTH2_PROXY_CLIENT_ID=${OAUTH2_PROXY_CLIENT_ID}
       - OAUTH2_PROXY_CLIENT_SECRET=${OAUTH2_PROXY_CLIENT_SECRET}
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
+      # The invite list: a multiline Coolify env var, one email per line. Not git.
+      - FRONTROW_ALLOWED_EMAILS=${FRONTROW_ALLOWED_EMAILS}
     volumes:
-      # Host file, managed over SSH — keeps the allowlist out of git.
-      - /data/frontrow/oauth2-emails.txt:/etc/oauth2-proxy/emails.txt:ro
+      # Coolify's `content:` extension writes the allowlist file from the env var
+      # above at deploy time. Change the list = edit the env var in Coolify + redeploy.
+      - type: bind
+        source: ./oauth2-emails.txt
+        target: /etc/oauth2-proxy/emails.txt
+        content: |
+          ${FRONTROW_ALLOWED_EMAILS}
     expose:
       - "4180"
     depends_on:
