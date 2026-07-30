@@ -151,10 +151,14 @@ def _list_summary(db: Session, lst: ArtistList, role: str) -> dict:
     shared_out = role == "owner" and (
         any(s.enabled for s in lst.shares) or len(lst.members) > 1 or invite_count > 0
     )
+    # Newest successful source check across this list's artists — the header shows it as
+    # "checked 06:12", which is the one thing that tells you the data is alive.
+    checks = [la.artist.last_checked_at for la in lst.artists_assoc if la.artist.last_checked_at]
     return {
         "id": lst.id,
         "name": lst.name,
         "share_note": lst.share_note,
+        "checked_at": max(checks).isoformat() if checks else None,
         "is_default": lst.is_default,
         "role": role,
         "can_edit": role in ("owner", "editor"),

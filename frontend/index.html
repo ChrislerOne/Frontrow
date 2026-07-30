@@ -1,306 +1,265 @@
 <!DOCTYPE html>
-<html lang="en" data-fr-theme="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Frontrow</title>
-  <link rel="stylesheet" href="nocturne.css" />
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Work+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="signal.css" />
   <style>
-    :root { --fr-mono: ui-monospace, "SFMono-Regular", Menlo, monospace; --fr-danger:#d4736a; --fr-success:#79b894; }
-    [data-fr-theme="light"] {
-      --color-bg:#e8ebf7; --color-surface:#f7f8fe; --color-text:#292b31;
-      --color-accent:#5d5294; --color-accent-2:#5c5783;
-      --color-divider: color-mix(in srgb, #292b31 18%, transparent);
-      --shadow-sm: 0 0 0 1px #cfd3e5;
-      --shadow-md: 0 0 0 1px #cfd3e5, 0 6px 18px rgba(41,43,49,.12);
-      --shadow-lg: 0 0 0 1px #b2b6ca, 0 16px 40px rgba(41,43,49,.18);
-      --fr-danger:#9c4038; --fr-success:#2c6a4d;
-    }
-    @keyframes frShimmer{0%{background-position:-320px 0}100%{background-position:320px 0}}
-    @keyframes frStamp{0%{opacity:0;transform:rotate(-12deg) scale(2.1)}60%{opacity:1;transform:rotate(-12deg) scale(.94)}100%{opacity:1;transform:rotate(-12deg) scale(1)}}
-    @keyframes frToast{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
-    @keyframes frSpin{100%{transform:rotate(360deg)}}
+    /* Signal uses typographic glyphs (▾ × ＋ ↻ ✓ ‹ ›) instead of an icon font — one
+       fewer external dependency, and the identity survives with no webfont at all. */
     @keyframes frFade{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
-    @media (prefers-reduced-motion: reduce){*{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.001s !important}}
+    @keyframes frSpin{100%{transform:rotate(360deg)}}
+    @keyframes frShimmer{0%{background-position:-320px 0}100%{background-position:320px 0}}
 
-    .fr-app{min-height:100vh;display:flex;flex-direction:column;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}
-    .fr-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:11.2px;padding:11.2px 16.8px;background:color-mix(in srgb, var(--color-bg) 88%, transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--color-divider)}
-    .fr-tick{width:3px;height:14px;background:var(--color-accent);border-radius:2px;flex:none}
-    .fr-brand{font-family:var(--font-heading);font-weight:500;font-size:15px;letter-spacing:.22em;text-transform:uppercase}
-    .fr-wrap{width:100%;max-width:1160px;margin:0 auto;padding:22.4px 16.8px 44.8px;display:flex;flex-direction:column;gap:22.4px;flex:1}
-    .fr-cols{display:flex;flex-wrap:wrap;gap:22.4px;align-items:flex-start}
-    .fr-aside{flex:1 1 250px;display:flex;flex-direction:column;gap:11.2px}
-    .fr-main{flex:1 1 560px;display:flex;flex-direction:column;gap:11.2px;min-width:0}
-    .fr-add-row{display:flex;flex-wrap:wrap;gap:8.4px;align-items:flex-end}
-    .fr-hint{color:color-mix(in srgb, var(--color-text) 55%, transparent);font-size:12px}
-    .fr-warning{display:flex;align-items:flex-start;gap:8.4px;padding:11.2px;border-radius:8px;background:var(--color-surface);box-shadow:0 0 0 1px color-mix(in srgb, var(--fr-danger) 60%, transparent);font-size:13px;animation:frFade .2s ease both}
+    .app{min-height:100vh;display:flex;flex-direction:column}
+    .wrap{width:100%;max-width:1320px;margin:0 auto;padding:0 24px 32px}
 
-    /* list switcher */
-    .fr-listbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:11.2px}
-    .fr-listbtn{display:inline-flex;align-items:center;gap:10px;background:var(--color-surface);border:1px solid var(--color-divider);cursor:pointer;color:var(--color-text);padding:8px 12px;border-radius:10px;box-shadow:var(--shadow-sm)}
-    .fr-listbtn:hover{border-color:color-mix(in srgb, var(--color-text) 45%, transparent)}
-    .fr-listlead{color:var(--color-accent);font-size:18px;display:flex}
-    .fr-shared-ic{color:var(--color-accent);font-size:15px;display:flex}
-    .fr-listname{font-family:var(--font-heading);font-weight:500;font-size:20px;letter-spacing:-.015em}
-    .fr-rolechip{font-family:var(--fr-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;border-radius:5px;border:1px solid var(--color-divider);color:color-mix(in srgb, var(--color-text) 60%, transparent)}
-    .fr-rolechip.owner{border-color:var(--color-accent);color:var(--color-accent)}
-    .fr-shrow{display:flex;gap:5.6px;align-items:center;flex-wrap:wrap;padding:7px 8.4px;border-radius:8px;background:var(--color-bg)}
+    /* ── header ─────────────────────────────────────────────── */
+    .top{display:flex;align-items:center;gap:14px;min-height:60px;flex-wrap:wrap}
+    .switch{display:inline-flex;align-items:center;gap:9px;padding:7px 13px;border:0;cursor:pointer;
+            background:var(--surface);border-radius:var(--r-pill);box-shadow:var(--sh-1);
+            color:var(--text);font:500 13px/1 var(--ui)}
+    .switch:hover{background:var(--raise)}
+    .addrow{display:flex;align-items:center;gap:10px;padding:6px 0 16px;flex-wrap:wrap}
+    .addfield{flex:1 1 300px;max-width:460px;position:relative}
+    .cols{display:flex;gap:16px;align-items:flex-start}
+    .aside{width:264px;flex:none;display:flex;flex-direction:column;gap:12px;padding:18px}
+    .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
+    .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
-    .fr-noart{display:grid;place-items:center;background:var(--color-accent-800);color:var(--color-accent-100);font-size:13px}
-    .fr-artist-row{display:flex;align-items:center;gap:8.4px;padding:7px 8.4px;border-radius:8px;background:var(--color-surface)}
-    .fr-artist-row:hover{background:var(--color-neutral-800)}
-    .fr-artist-name{flex:1;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .fr-artist-count{font-family:var(--fr-mono);font-size:11px;color:color-mix(in srgb, var(--color-text) 45%, transparent)}
-    .fr-artist-note{font-size:11px;letter-spacing:.02em;color:color-mix(in srgb, var(--color-text) 42%, transparent);flex:none;display:inline-flex;align-items:center;gap:4px}
-    .fr-artist-note.out{color:var(--fr-danger)}
-    .fr-rm{width:28px;height:28px;color:color-mix(in srgb, var(--color-text) 55%, transparent)}
-    .fr-rm:hover{color:var(--fr-danger);background:color-mix(in srgb, var(--fr-danger) 12%, transparent)}
-    .fr-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8.4px}
-    .fr-mono-note{font-family:var(--fr-mono);font-size:10px;letter-spacing:.1em;color:color-mix(in srgb, var(--color-text) 42%, transparent)}
-    .fr-grid{display:grid;gap:11.2px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+    /* ── artist rows in the aside ───────────────────────────── */
+    .art{display:flex;align-items:center;gap:10px;padding:9px 6px;border-radius:10px}
+    .art:hover{background:var(--raise)}
+    .art .a-name{font:500 13px/1.2 var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .art .a-st{font:400 10px/1.2 var(--mono);color:var(--text-mute)}
+    .art .a-st.gone{color:var(--gone)}
+    .art .rm{border:0;background:transparent;color:var(--text-mute);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:6px}
+    .art .rm:hover{color:var(--alert);background:color-mix(in srgb,var(--alert) 12%,transparent)}
 
-    .fr-card{position:relative;overflow:hidden;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;transition:transform .18s ease, box-shadow .18s ease, opacity .3s ease}
-    @media (hover:hover){.fr-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}}
-    .fr-card.is-attending{box-shadow:0 0 0 1.5px var(--color-accent), 0 8px 20px rgba(0,0,0,.45)}
-    .fr-card.is-attending:hover{box-shadow:0 0 0 1.5px var(--color-accent), 0 10px 24px rgba(0,0,0,.55)}
-    /* Not-bookable shows stay on the board — the title dims and a tag says why, but a
-       ticket you already hold still highlights the card. */
-    .fr-card.is-out{background:color-mix(in srgb, var(--color-surface) 62%, var(--color-bg))}
-    .fr-card.is-out .fr-title{color:color-mix(in srgb, var(--color-text) 58%, transparent)}
-    .fr-card.is-out .fr-meta{color:color-mix(in srgb, var(--color-text) 62%, transparent)}
-    .fr-avail{font-family:var(--fr-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;flex:none}
-    .fr-avail.danger{color:var(--fr-danger);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--fr-danger) 55%, transparent)}
-    .fr-avail.muted{color:color-mix(in srgb, var(--color-text) 55%, transparent);box-shadow:inset 0 0 0 1px var(--color-divider)}
-    .fr-price{color:var(--color-accent)}
-    .fr-card-main{padding:16.8px 16.8px 11.2px;display:flex;flex-direction:column;gap:5.6px;flex:1}
-    .fr-kicker-row{display:flex;align-items:baseline;gap:8.4px}
-    .fr-serial{margin-left:auto;font-family:var(--fr-mono);font-size:9px;letter-spacing:.1em;color:color-mix(in srgb, var(--color-text) 32%, transparent);flex:none}
-    .fr-title{font-family:var(--font-heading);font-weight:500;font-size:17px;line-height:1.2;text-wrap:pretty}
-    .fr-group + .fr-group{margin-top:11.2px}
-    .fr-group-head{display:flex;align-items:center;gap:10px;width:100%;padding:11.2px 14px;background:var(--color-surface);box-shadow:var(--shadow-sm);border:0;border-radius:10px;cursor:pointer;color:var(--color-text);text-align:left}
-    .fr-group-head:hover{box-shadow:var(--shadow-md)}
-    .fr-group-head > .ph{color:var(--color-accent);font-size:15px;flex:none}
-    .fr-group-name{font-family:var(--font-heading);font-weight:500;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .fr-group-count{font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .fr-group-next{margin-left:auto;font-family:var(--fr-mono);font-size:10px;letter-spacing:.1em;color:color-mix(in srgb, var(--color-text) 42%, transparent);flex:none}
-    .fr-group-body{padding-top:8.4px}
-    .fr-going-line{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--color-accent)}
-    .fr-chips{display:flex;gap:5.6px;flex-wrap:wrap}
-    .fr-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;border:1px solid var(--color-divider);background:transparent;color:color-mix(in srgb,var(--color-text) 70%,transparent);cursor:pointer;font:inherit;font-size:12.5px}
-    .fr-chip:hover{background:color-mix(in srgb,var(--color-text) 6%,transparent)}
-    .fr-chip.active{border-color:var(--color-accent);color:var(--color-accent);background:color-mix(in srgb,var(--color-accent) 10%,transparent)}
-    .fr-chip span{font-family:var(--fr-mono);font-size:10px;opacity:.8}
-    .fr-cal-head{display:flex;align-items:center;gap:8.4px;margin-bottom:11.2px}
-    .fr-cal-title{font-family:var(--font-heading);font-weight:500;font-size:18px;margin-right:auto}
-    .fr-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5.6px}
-    .fr-cal-dow{font-family:var(--fr-mono);font-size:10px;letter-spacing:.1em;color:color-mix(in srgb,var(--color-text) 45%,transparent);text-align:center;padding-bottom:2px}
-    .fr-cal-cell{min-height:84px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-sm);padding:5px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
-    .fr-cal-cell.empty{background:transparent;box-shadow:none}
-    .fr-cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--color-accent)}
-    .fr-cal-day{font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent)}
-    .fr-cal-ev{display:block;font-size:11px;line-height:1.3;padding:2px 5px;border-radius:5px;background:color-mix(in srgb,var(--color-text) 8%,transparent);color:var(--color-text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .fr-cal-ev:hover{background:color-mix(in srgb,var(--color-text) 15%,transparent)}
-    .fr-cal-ev.att{background:color-mix(in srgb,var(--color-accent) 24%,transparent);color:var(--color-text)}
-    .fr-cal-ev.out{text-decoration:line-through;text-decoration-color:var(--fr-danger);color:color-mix(in srgb,var(--color-text) 50%,transparent)}
-    .fr-cal-tba{display:flex;align-items:center;gap:8.4px;flex-wrap:wrap;margin-top:11.2px}
-    @media(max-width:560px){.fr-cal-cell{min-height:62px}.fr-cal-ev{font-size:10px;padding:1px 4px}}
-    /* Leaflet is loaded on demand; these only style our own bits on top of it. */
-    .fr-map{height:min(64vh,560px);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm);background:var(--color-surface)}
-    .fr-map .leaflet-container{background:var(--color-surface);font-family:var(--font-body)}
-    /* OSM only ships a light tile style, so dark mode inverts the tiles themselves.
-       Applied to the tile images only — markers and popups keep their real colours. */
-    html:not([data-fr-theme="light"]) .fr-map .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.88) contrast(.9) saturate(.32)}
-    .fr-map .leaflet-popup-content-wrapper,.fr-map .leaflet-popup-tip{background:var(--color-surface);color:var(--color-text);box-shadow:var(--shadow-md)}
-    .fr-map .leaflet-popup-content-wrapper{border-radius:10px}
-    .fr-map .leaflet-popup-content a{color:var(--color-accent)}
-    .fr-map .leaflet-bar a{background:var(--color-surface);color:var(--color-text);border-bottom-color:var(--color-divider)}
-    .fr-map .leaflet-bar a:hover{background:var(--color-neutral-800)}
-    .fr-map .leaflet-control-attribution{background:color-mix(in srgb,var(--color-surface) 86%,transparent);color:color-mix(in srgb,var(--color-text) 62%,transparent)}
-    .fr-map .leaflet-control-attribution a{color:var(--color-accent)}
-    .fr-pin{display:grid;place-items:center;width:26px;height:26px;border-radius:50% 50% 50% 2px;transform:rotate(-45deg);
-            background:var(--color-neutral-700);box-shadow:0 0 0 1.5px var(--color-neutral-500);color:var(--color-neutral-100)}
-    .fr-pin i{transform:rotate(45deg);font-size:13px}
-    .fr-pin.att{background:var(--color-accent);box-shadow:0 0 0 1.5px var(--color-accent-200);color:#fff}
-    .fr-pin.out{background:var(--color-neutral-800);color:color-mix(in srgb,var(--fr-danger) 80%,transparent);box-shadow:0 0 0 1.5px var(--fr-danger)}
-    .fr-mappop{font-size:13px;display:flex;flex-direction:column;gap:3px}
-    .fr-maphint{display:flex;align-items:center;gap:8.4px;flex-wrap:wrap;margin-top:8.4px;font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)}
-    .fr-perf{position:relative;height:1px;background:repeating-linear-gradient(to right, var(--color-divider) 0 5px, transparent 5px 11px)}
-    .fr-perf::before,.fr-perf::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--color-bg)}
-    .fr-perf::before{left:-7px}.fr-perf::after{right:-7px}
-    .fr-stub{padding:12.6px 16.8px 14px;display:flex;align-items:center;gap:11.2px;flex-wrap:wrap}
-    .fr-meta{flex:1 1 150px;display:flex;flex-direction:column;gap:3px;font-family:var(--fr-mono);font-size:11.5px;letter-spacing:.04em;min-width:0}
-    .fr-placeline{color:color-mix(in srgb, var(--color-text) 55%, transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .fr-stub-actions{display:flex;align-items:center;gap:5.6px;flex:none}
+    /* ── group panels ───────────────────────────────────────── */
+    .group{overflow:hidden}
+    .group+.group{margin-top:14px}
+    .g-head{display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:0;cursor:pointer;
+            background:transparent;color:var(--text);text-align:left}
+    .g-head:hover{background:color-mix(in srgb,var(--text) 3%,transparent)}
+    .g-caret{color:var(--text-mute);font-size:10px;flex:none}
+    .g-name{font:700 21px/1 var(--ui);letter-spacing:-.01em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .g-sum{font:400 11px/1 var(--mono);color:var(--text-dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .g-next{margin-left:auto;flex:none;padding:6px 12px;border-radius:var(--r-pill);
+            background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);
+            font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
 
-    .fr-empty{display:flex;flex-direction:column;gap:8.4px;align-items:flex-start;padding:33.6px 22.4px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)}
-    .fr-empty.sm{padding:22.4px 16.8px}
-    .fr-empty > i{font-size:24px;color:var(--color-accent)}
-    .fr-empty .h{font-family:var(--font-heading);font-size:18px}
-    .fr-empty.sm .h{font-size:16px}
-    .fr-skel{border-radius:14px;background:linear-gradient(90deg, var(--color-surface) 0%, var(--color-neutral-800) 50%, var(--color-surface) 100%);background-size:320px 100%;animation:frShimmer 1.2s linear infinite}
+    /* ── the row, collapsing to two lines on narrow screens ── */
+    @media (max-width:960px){
+      .row{grid-template-columns:14px minmax(0,1fr) auto;
+           grid-template-areas:"n title act" "n meta act" "n price act";
+           row-gap:3px;padding:11px 14px;align-items:center}
+      .row .r-new{grid-area:n}
+      .row .r-date{grid-area:meta;font-size:11.5px;color:var(--text-dim)}
+      .row .r-title{grid-area:title}
+      .row .r-place{grid-area:meta;justify-self:end;text-align:right;font-size:11.5px}
+      .row .r-price{grid-area:price;text-align:left;font-size:11.5px}
+      .row .r-tag{grid-area:price;justify-self:end}
+      .row .r-act{grid-area:act;flex-direction:column;gap:4px;align-items:flex-end}
+      .g-name{font-size:18px}
+      .g-sum{display:none}
+    }
+    @media (max-width:860px){ .cols{flex-direction:column} .aside{width:100%} }
 
-    .fr-avatar{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--color-accent-800);color:var(--color-accent-100);font-size:11px;letter-spacing:.04em}
-    .fr-menu{position:absolute;top:calc(100% + 6px);min-width:236px;padding:8.4px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:2.8px;animation:frFade .16s ease both;z-index:40}
-    .fr-menu.right{right:0}.fr-menu.left{left:0}
-    .fr-menu .btn{justify-content:flex-start;color:var(--color-text);padding:6px 8.4px}
-    .fr-menu-head{padding:5.6px 8.4px 8.4px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--color-divider)}
-    .fr-menu-item{display:flex;align-items:center;gap:8.4px;width:100%;padding:6px 8.4px;border:0;border-radius:6px;cursor:pointer;text-align:left;font:inherit;font-size:13.5px;color:var(--color-text);background:transparent}
-    .fr-menu-item:hover{background:color-mix(in srgb, var(--color-text) 7%, transparent)}
-    .fr-menu-item.active{box-shadow:inset 0 0 0 1px var(--color-accent)}
+    /* ── calendar: grid on desktop, agenda on mobile ────────── */
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .cal-dow{font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--text-mute);text-align:center;padding-bottom:4px}
+    .cal-cell{min-height:88px;border-radius:10px;background:var(--raise);padding:6px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+    .cal-cell.empty{background:transparent}
+    .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+    .cal-day{font:400 11px/1 var(--mono);color:var(--text-mute)}
+    .cal-ev{display:block;font:500 11px/1.25 var(--ui);padding:3px 6px;border-radius:6px;
+            background:var(--surface);color:var(--text);text-decoration:none;
+            overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cal-ev:hover{text-decoration:none;background:var(--line)}
+    .cal-ev.held{background:var(--held);color:var(--held-ink)}
+    .cal-ev.gone{color:var(--gone)}
+    .agenda{display:none;flex-direction:column}
+    .ag-row{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 4px;border-top:1px solid var(--line)}
+    .ag-when{font:500 12px/1.35 var(--mono);color:var(--text-dim)}
+    @media (max-width:720px){ .cal-grid,.cal-dow{display:none} .agenda{display:flex} }
 
-    .fr-pop{position:absolute;z-index:45;top:calc(100% + 6px);left:0;width:274px;max-width:calc(100vw - 33.6px);padding:11.2px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:11.2px;animation:frFade .14s ease both}
-    .fr-city{display:flex;flex-direction:column;gap:1px;max-height:214px;overflow-y:auto}
-    .fr-suggest{position:absolute;z-index:46;top:calc(100% + 4px);left:0;width:100%;padding:4px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:1px;animation:frFade .14s ease both;max-height:260px;overflow:auto}
+    /* ── map ────────────────────────────────────────────────── */
+    .map{height:min(62vh,540px);border-radius:var(--r-lg);overflow:hidden;background:var(--raise)}
+    /* Dimmed, never inverted: inverting OSM turns green land into olive mud. */
+    .map .leaflet-tile{filter:saturate(.35) brightness(.72)}
+    [data-fr-theme="light"] .map .leaflet-tile{filter:saturate(.62) brightness(1.02)}
+    .map .leaflet-container{background:var(--raise);font-family:var(--ui)}
+    .map .leaflet-popup-content-wrapper,.map .leaflet-popup-tip{background:var(--surface);color:var(--text);box-shadow:var(--sh-3)}
+    .map .leaflet-popup-content-wrapper{border-radius:12px}
+    .map .leaflet-popup-content a{color:var(--accent)}
+    .map .leaflet-bar a{background:var(--surface);color:var(--text);border-bottom-color:var(--line)}
+    .map .leaflet-bar a:hover{background:var(--raise)}
+    .map .leaflet-control-attribution{background:color-mix(in srgb,var(--surface) 88%,transparent);color:var(--text-mute);font-family:var(--mono);font-size:9.5px}
+    .map .leaflet-control-attribution a{color:var(--accent)}
+    .pin{display:grid;place-items:center;width:24px;height:24px;border-radius:var(--r-pill);
+         background:var(--accent);color:var(--accent-ink);font:700 11px/1 var(--mono);
+         box-shadow:0 0 0 2px var(--bg)}
+    .pin.held{background:var(--held);color:var(--held-ink)}
+    .pin.gone{background:var(--raise);color:var(--gone);box-shadow:0 0 0 2px var(--bg),inset 0 0 0 1.5px var(--gone)}
+    .maplegend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding-top:10px}
+    .legdot{display:inline-flex;align-items:center;gap:6px;font:400 11px/1 var(--mono);color:var(--text-mute)}
+    .legdot i{width:8px;height:8px;border-radius:var(--r-pill);background:var(--accent);display:inline-block}
+    .legdot.held i{background:var(--held)}
+    .legdot.gone i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--gone)}
 
-    .fr-toasts{position:sticky;bottom:0;z-index:50;height:0;display:flex;justify-content:center;pointer-events:none}
-    .fr-toasts-inner{position:absolute;bottom:16.8px;display:flex;flex-direction:column;gap:5.6px;align-items:center;width:min(420px,calc(100vw - 33.6px))}
-    .fr-toast{pointer-events:auto;cursor:pointer;display:flex;align-items:center;gap:8.4px;padding:9.8px 11.2px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-md);font-size:13.5px;animation:frToast .22s ease both;width:100%}
-    .fr-toast > span{flex:1}
-
+    /* ── misc ───────────────────────────────────────────────── */
+    .suggest{position:absolute;z-index:46;top:calc(100% + 6px);left:0;width:100%;padding:8px;
+             background:var(--raise);border:1px solid var(--line);border-radius:var(--r-lg);
+             box-shadow:var(--sh-3);display:flex;flex-direction:column;gap:1px;max-height:272px;overflow:auto;
+             animation:frFade .14s ease both}
+    .warn{display:flex;gap:10px;align-items:flex-start;padding:13px 15px;border-radius:var(--r-md);
+          background:var(--surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--alert) 45%,transparent);
+          font:400 13px/1.45 var(--prose);animation:frFade .2s ease both}
+    .skel{border-radius:var(--r-lg);background:linear-gradient(90deg,var(--surface) 0%,var(--raise) 50%,var(--surface) 100%);
+          background-size:320px 100%;animation:frShimmer 1.2s linear infinite}
+    .toasts{position:sticky;bottom:0;z-index:50;height:0;display:flex;justify-content:center;pointer-events:none}
+    .toasts-in{position:absolute;bottom:20px;display:flex;flex-direction:column;gap:8px;width:min(440px,calc(100vw - 32px))}
+    .toast{pointer-events:auto;animation:frFade .2s ease both}
+    .veil{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:var(--bg);animation:frFade .16s ease both}
+    .shrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 11px;border-radius:var(--r-md);background:var(--raise)}
+    .prof{width:100%;max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
     [hidden]{display:none !important}
   </style>
 </head>
 <body>
-  <div class="fr-app">
-    <header class="fr-topbar">
-      <span class="fr-tick"></span>
-      <span class="fr-brand" style="margin-right:auto">Frontrow</span>
-      <button class="btn btn-secondary btn-icon" id="btn-refresh" title="Refresh now" aria-label="Refresh now"><i class="ph ph-arrows-clockwise" style="font-size:16px"></i></button>
-      <div style="position:relative">
-        <button class="btn btn-secondary" id="btn-menu" style="gap:8px;padding:5.6px 8.4px" aria-haspopup="true" aria-expanded="false">
-          <span class="fr-avatar" id="avatar"><i class="ph ph-user"></i></span>
-          <i class="ph ph-caret-down" style="font-size:12px;opacity:.7"></i>
-        </button>
-        <div id="menu" class="fr-menu right" hidden>
-          <div class="fr-menu-head">
-            <span id="me-name" style="font-size:14px">Signed in</span>
-            <span id="me-email" style="font-family:var(--fr-mono);font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">via Google</span>
-          </div>
-          <button class="fr-menu-item" id="mi-profile"><i class="ph ph-user-circle"></i> Profile &amp; settings</button>
-          <button class="fr-menu-item" id="mi-share"><i class="ph ph-share-network"></i> Share this list</button>
-          <a class="fr-menu-item" href="/oauth2/sign_out?rd=%2F%3Fsigned_out%3D1"><i class="ph ph-sign-out"></i> Sign out</a>
+  <div class="app">
+    <div class="wrap">
+      <header class="top">
+        <span class="wordmark">frontrow<b>.</b></span>
+        <div style="position:relative">
+          <button class="switch" id="btn-listswitch" aria-expanded="false">
+            <span id="cur-list-name">…</span>
+            <span class="role" id="cur-list-role" hidden></span>
+            <span id="cur-list-shared" class="mono" style="color:var(--text-mute);font-size:11px" hidden></span>
+            <span style="color:var(--text-mute);font-size:10px" aria-hidden="true">▾</span>
+          </button>
+          <div id="list-menu" class="menu" style="top:calc(100% + 6px);left:0;width:300px" hidden></div>
         </div>
-      </div>
-    </header>
-
-    <!-- ── DASHBOARD ───────────────────────────────────────────── -->
-    <div class="fr-wrap" id="view-dashboard">
-      <div class="fr-listbar">
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <span class="fr-mono-note">CURRENT LIST</span>
-          <div style="position:relative">
-            <button class="fr-listbtn" id="btn-listswitch" aria-expanded="false">
-              <span class="fr-listlead"><i class="ph ph-stack"></i></span>
-              <span class="fr-listname" id="cur-list-name">…</span>
-              <span class="fr-shared-ic" id="cur-list-shared" hidden></span>
-              <span class="fr-rolechip" id="cur-list-role" hidden></span>
-              <i class="ph ph-caret-down" style="opacity:.6"></i>
-            </button>
-            <div id="list-menu" class="fr-menu left" hidden></div>
-          </div>
-        </div>
-        <div style="margin-left:auto;display:flex;gap:5.6px;flex-wrap:wrap">
-          <button class="btn btn-secondary" id="btn-share-2" hidden><i class="ph ph-share-network"></i> Share</button>
-          <button class="btn btn-secondary btn-icon" id="btn-rename" title="Rename list" hidden><i class="ph ph-pencil-simple" style="font-size:15px"></i></button>
-          <button class="btn btn-secondary btn-icon" id="btn-delete" title="Delete list" hidden><i class="ph ph-trash" style="font-size:15px"></i></button>
-        </div>
-      </div>
-
-      <div id="add-block" style="display:flex;flex-direction:column;gap:8.4px">
-        <div class="field fr-add-row">
-          <div style="flex:1 1 240px;position:relative">
-            <label for="fr-add">Track an artist</label>
-            <input id="fr-add" class="input" placeholder="Add an artist — e.g. Fontaines D.C." autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" />
-            <div id="add-suggest" class="fr-suggest" hidden></div>
-          </div>
-          <button class="btn btn-primary" id="btn-add" style="min-height:36px;min-width:104px"><i class="ph ph-plus"></i> Track</button>
-        </div>
-        <span class="fr-hint" id="add-hint">Frontrow checks the ticket sources right away, then every 12 hours.</span>
-        <div id="add-warning"></div>
-      </div>
-
-      <div class="fr-cols">
-        <aside class="fr-aside">
-          <div style="display:flex;align-items:baseline;gap:8.4px">
-            <h6 style="margin:0">Tracked artists</h6>
-            <span class="fr-artist-count" id="artist-count"></span>
-          </div>
-          <div id="artists"></div>
-        </aside>
-
-        <main class="fr-main">
-          <div class="fr-toolbar">
-            <h6 style="margin:0;margin-right:auto">Upcoming concerts</h6>
-            <div class="seg" id="view-seg" style="flex:none">
-              <label class="seg-opt"><input type="radio" name="fr-view" value="list" checked /><i class="ph ph-rows"></i><span>List</span></label>
-              <label class="seg-opt"><input type="radio" name="fr-view" value="calendar" /><i class="ph ph-calendar-blank"></i><span>Calendar</span></label>
-              <label class="seg-opt"><input type="radio" name="fr-view" value="map" /><i class="ph ph-map-trifold"></i><span>Map</span></label>
+        <div style="flex:1"></div>
+        <span class="status" id="checked-line"></span>
+        <button class="btn btn-pill btn-sm" id="btn-refresh"><span aria-hidden="true">↻</span> Refresh</button>
+        <div style="position:relative">
+          <button class="mono-circle" id="btn-menu" style="width:32px;height:32px;border:0;cursor:pointer" aria-haspopup="true" aria-expanded="false" aria-label="Account menu"><span id="avatar">·</span></button>
+          <div id="menu" class="menu" style="top:calc(100% + 6px);right:0;min-width:240px" hidden>
+            <div style="padding:6px 10px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px">
+              <span id="me-name" style="font:600 13px/1.2 var(--ui)">Signed in</span>
+              <span id="me-email" class="status">via Google</span>
             </div>
-            <button class="btn btn-ghost" id="btn-refresh-2"><i class="ph ph-arrows-clockwise"></i> Refresh now</button>
+            <button class="menu-item" id="mi-profile">Profile &amp; settings</button>
+            <button class="menu-item" id="mi-share">Share this list</button>
+            <a class="menu-item" href="/oauth2/sign_out?rd=%2F%3Fsigned_out%3D1">Sign out</a>
           </div>
-          <div style="display:flex;gap:8.4px;align-items:center;flex-wrap:wrap">
-            <div class="fr-chips" id="chips">
-              <button type="button" class="fr-chip active" data-quick="all">All <span data-c="all">0</span></button>
-              <button type="button" class="fr-chip" data-quick="new">New <span data-c="new">0</span></button>
-              <button type="button" class="fr-chip" data-quick="attending"><i class="ph ph-ticket"></i> Tickets bought <span data-c="attending">0</span></button>
-              <button type="button" class="fr-chip" data-quick="soldout"><i class="ph ph-prohibit"></i> Sold out <span data-c="soldout">0</span></button>
-            </div>
-            <div style="position:relative;flex:none;margin-left:auto">
-              <button class="btn btn-secondary" id="btn-filter" aria-expanded="false" style="min-height:36px">
-                <i class="ph ph-map-pin" style="font-size:15px"></i> <span id="filter-label">All cities</span> <i class="ph ph-caret-down" style="font-size:11px;opacity:.65"></i>
-              </button>
-              <div id="filter-pop" class="fr-pop" hidden></div>
-            </div>
+        </div>
+      </header>
+
+      <!-- ── DASHBOARD ───────────────────────────────────────── -->
+      <div id="view-dashboard">
+        <div class="addrow" id="add-block">
+          <div class="addfield">
+            <input id="fr-add" class="input" placeholder="Track an artist…" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-label="Track an artist" />
+            <div id="add-suggest" class="suggest" hidden></div>
           </div>
-          <div id="concerts"></div>
-        </main>
+          <button class="btn btn-primary" id="btn-add">Track</button>
+          <span class="status" id="add-hint">source: eventim · every 12 h</span>
+        </div>
+        <div id="add-warning" style="padding-bottom:14px"></div>
+
+        <div class="cols">
+          <aside class="aside panel">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <span style="font:600 14px/1 var(--ui)">Tracking</span>
+              <span class="status" id="artist-count"></span>
+            </div>
+            <div id="artists"></div>
+          </aside>
+
+          <main class="main">
+            <div class="panel" id="horizon-panel" style="padding:16px 20px 14px" hidden>
+              <div class="horizon-months label" id="horizon-months"></div>
+              <div class="horizon-line" id="horizon-line"><span class="horizon-now"></span></div>
+            </div>
+
+            <div class="bar">
+              <div class="seg" id="view-seg" role="tablist">
+                <button class="seg-opt on" data-view="list" role="tab" aria-selected="true">List</button>
+                <button class="seg-opt" data-view="calendar" role="tab" aria-selected="false">Calendar</button>
+                <button class="seg-opt" data-view="map" role="tab" aria-selected="false">Map</button>
+              </div>
+              <div style="flex:1"></div>
+              <div id="chips" style="display:flex;gap:2px;flex-wrap:wrap">
+                <button class="chip on" data-quick="all">All <em data-c="all">0</em></button>
+                <button class="chip" data-quick="new">New <em data-c="new">0</em></button>
+                <button class="chip" data-quick="attending">Bought <em data-c="attending">0</em></button>
+                <button class="chip" data-quick="soldout">Sold out <em data-c="soldout">0</em></button>
+              </div>
+              <div style="position:relative">
+                <button class="chip" id="btn-filter" aria-expanded="false"><span aria-hidden="true">⌖</span> <span id="filter-label">All cities</span></button>
+                <div id="filter-pop" class="pop" style="top:calc(100% + 6px);right:0;width:320px" hidden></div>
+              </div>
+            </div>
+
+            <div id="concerts"></div>
+          </main>
+        </div>
       </div>
+
+      <!-- ── PROFILE ─────────────────────────────────────────── -->
+      <div id="view-profile" class="prof" hidden>
+        <button class="btn btn-ghost btn-sm" id="btn-back" style="align-self:flex-start">← Back to shows</button>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <span class="mono-circle" id="p-avatar" style="width:56px;height:56px;font-size:17px">·</span>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <h4 id="p-name" style="font-size:21px">Your account</h4>
+            <span class="status" id="p-email">via Google</span>
+          </div>
+        </div>
+        <hr class="hr" />
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span class="label">appearance</span>
+          <div class="seg" id="theme-seg" style="align-self:flex-start">
+            <button class="seg-opt" data-theme="dark">Dark</button>
+            <button class="seg-opt" data-theme="light">Light</button>
+            <button class="seg-opt" data-theme="system">System</button>
+          </div>
+        </div>
+        <hr class="hr" />
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span class="label">default city</span>
+          <select class="input" id="p-city" style="max-width:320px"></select>
+          <span class="prose" style="font-size:13px;color:var(--text-dim)">Used for the radius filter and the map's home marker.</span>
+        </div>
+        <hr class="hr" />
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+          <span class="label">session</span>
+          <a class="btn" href="/oauth2/sign_out?rd=%2F%3Fsigned_out%3D1">Sign out</a>
+        </div>
+        <hr class="hr" />
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+          <span class="label" style="color:var(--alert)">danger zone</span>
+          <span class="prose" style="font-size:13px;color:var(--text-dim)">Removes every artist from <b id="p-listname">this list</b>. Shows go with them.</span>
+          <button class="btn btn-danger" id="p-clear">Remove all artists</button>
+        </div>
+      </div>
+
+      <div class="toasts"><div class="toasts-in" id="toasts"></div></div>
     </div>
 
-    <!-- ── PROFILE ─────────────────────────────────────────────── -->
-    <div class="fr-wrap" id="view-profile" hidden style="max-width:660px">
-      <button class="btn btn-ghost" id="btn-back" style="align-self:flex-start;color:color-mix(in srgb, var(--color-text) 65%, transparent)"><i class="ph ph-arrow-left"></i> Back to shows</button>
-      <div style="display:flex;align-items:center;gap:16.8px;flex-wrap:wrap">
-        <span class="fr-avatar" id="p-avatar" style="width:56px;height:56px;font-family:var(--font-heading);font-size:19px"><i class="ph ph-user"></i></span>
-        <div style="display:flex;flex-direction:column;gap:2px"><h4 id="p-name" style="margin:0">Your account</h4><span id="p-email" style="font-family:var(--fr-mono);font-size:12px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">Signed in with Google</span></div>
-      </div>
-      <hr class="hr" />
-      <div style="display:flex;flex-direction:column;gap:5.6px">
-        <h6 style="margin:0">Appearance</h6>
-        <span class="text-muted" style="font-size:13px;margin-bottom:5.6px">Frontrow follows your system by default. Dark is how it's meant to look.</span>
-        <div class="seg" id="theme-seg" style="align-self:flex-start">
-          <label class="seg-opt"><input type="radio" name="fr-theme" value="dark" /><i class="ph ph-moon"></i><span>Dark</span></label>
-          <label class="seg-opt"><input type="radio" name="fr-theme" value="light" /><i class="ph ph-sun"></i><span>Light</span></label>
-          <label class="seg-opt"><input type="radio" name="fr-theme" value="system" /><i class="ph ph-monitor"></i><span>System</span></label>
-        </div>
-      </div>
-      <hr class="hr" />
-      <div style="display:flex;flex-direction:column;gap:5.6px">
-        <h6 style="margin:0">Default city</h6>
-        <span class="text-muted" style="font-size:13px;margin-bottom:5.6px">Open Frontrow already filtered to your city.</span>
-        <select class="input" id="p-city" style="max-width:300px"></select>
-      </div>
-      <hr class="hr" />
-      <div style="display:flex;flex-direction:column;gap:8.4px;align-items:flex-start">
-        <h6 style="margin:0">Session</h6>
-        <a class="btn btn-secondary" href="/oauth2/sign_out?rd=%2F%3Fsigned_out%3D1"><i class="ph ph-sign-out"></i> Sign out</a>
-      </div>
-      <hr class="hr" />
-      <div style="display:flex;flex-direction:column;gap:8.4px;align-items:flex-start">
-        <h6 style="margin:0;color:var(--fr-danger)">Danger zone</h6>
-        <span class="text-muted" style="font-size:13px">Stop watching everything on <b id="p-listname">this list</b> and clear it. The artists stay in Frontrow's catalog, so other lists keep them.</span>
-        <button class="btn" id="p-clear" style="color:var(--fr-danger);border-color:color-mix(in srgb, var(--fr-danger) 70%, transparent)"><i class="ph ph-trash"></i> Remove all artists</button>
+    <div id="signout-veil" class="veil" hidden>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <span style="font:600 17px/1 var(--ui)"><span style="display:inline-block;animation:frSpin .9s linear infinite">◐</span> Signing out…</span>
+        <span class="status">see you at the show</span>
       </div>
     </div>
-
-    <div id="signout-veil" hidden style="position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:var(--color-bg);animation:frFade .16s ease both">
-      <div style="display:flex;align-items:center;gap:11.2px;font-family:var(--font-heading);font-size:17px">
-        <i class="ph ph-spinner" style="animation:frSpin .9s linear infinite;color:var(--color-accent)"></i> Signing out…
-      </div>
-    </div>
-
-    <div class="fr-toasts"><div class="fr-toasts-inner" id="toasts"></div></div>
   </div>
   <div id="dialog-root"></div>
 
@@ -315,45 +274,47 @@
     const esc = s => String(s ?? "").replace(/[&<>"']/g, c => (
       { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     const safeUrl = u => (typeof u === "string" && /^https?:\/\//i.test(u)) ? u : null;
+    const jsonBody = (body, method = "POST") =>
+      ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
     const WD = ["SO","MO","DI","MI","DO","FR","SA"];
     const MO = ["JAN","FEB","MRZ","APR","MAI","JUN","JUL","AUG","SEP","OKT","NOV","DEZ"];
+    const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const pad = n => String(n).padStart(2, "0");
     const dateLine = iso => {
       if (!iso) return "DATE TBA";
       const d = new Date(iso); if (isNaN(d)) return "DATE TBA";
-      const p = n => String(n).padStart(2, "0");
-      return `${WD[d.getDay()]} · ${d.getDate()} ${MO[d.getMonth()]} ${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`;
+      return `${WD[d.getDay()]} ${pad(d.getDate())} ${MO[d.getMonth()]} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
-    const placeLine = e => [e.venue, e.city].filter(Boolean).join(" · ").toUpperCase() || "VENUE TBA";
-    const shortDate = iso => { const d = new Date(iso); return isNaN(d) ? "TBA" : `${WD[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}`; };
-    const serial = e => {
-      const c = (e.city || "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "XXX";
-      let dp = "TBA";
-      if (e.start_date) { const d = new Date(e.start_date); if (!isNaN(d)) dp = String(d.getDate()).padStart(2,"0") + String(d.getMonth()+1).padStart(2,"0"); }
-      return `FR-${dp}-${c}`;
-    };
-    // The same thumbnail the search bar shows, reused wherever an artist is named.
-    const artistAvatar = (image, size = 26) => {
-      const box = `width:${size}px;height:${size}px;border-radius:50%;flex:none`;
-      const u = safeUrl(image);
-      return u
-        ? `<img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="${box};object-fit:cover" />`
-        : `<span class="fr-noart" style="${box}"><i class="ph ph-music-notes"></i></span>`;
-    };
+    const placeLine = e => [e.venue, e.city].filter(Boolean).join(" · ") || "Venue TBA";
+    const shortDate = iso => { const d = new Date(iso); return isNaN(d) ? "tba" : `${WD[d.getDay()]} ${pad(d.getDate())} ${MO[d.getMonth()]}`; };
     const initials = me => {
       const s = (me && (me.name || me.email)) || "";
       const parts = s.split(/[\s@._-]+/).filter(Boolean);
-      return ((parts[0]?.[0] || "") + (parts[1]?.[0] || parts[0]?.[1] || "")).toUpperCase() || "?";
+      return ((parts[0]?.[0] || "") + (parts[1]?.[0] || parts[0]?.[1] || "")).toUpperCase() || "·";
+    };
+
+    // Availability tags are lowercase mono — present, never shouting.
+    const AVAIL = {
+      sold_out:    { label: "sold out",   tone: "gone" },
+      cancelled:   { label: "cancelled",  tone: "alert" },
+      unavailable: { label: "no tickets", tone: "gone" },
+    };
+    const isBookable = e => !AVAIL[e.availability];
+    const money = e => e.price == null ? null : new Intl.NumberFormat(undefined,
+      { style: "currency", currency: e.currency || "EUR" }).format(e.price);
+    const cheapest = events => {
+      const priced = events.filter(e => e.price != null);
+      return priced.length ? priced.reduce((lo, e) => e.price < lo.price ? e : lo) : null;
     };
 
     const state = {
       me: null, lists: [], currentId: null, detail: null,
-      events: [], quick: "all", view: "list", calMonth: null, cityFilter: new Set(), loading: true,
-      defaultCityApplied: false, radiusKm: 0, geoPoint: null, filterTab: "cities",
-      map: null, mapLayer: null,
+      events: [], quick: "all", view: "list", calMonth: null, cityFilter: new Set(),
+      loading: true, defaultCityApplied: false, radiusKm: 0, geoPoint: null,
+      filterTab: "cities", map: null, mapLayer: null,
     };
-    const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     const expandedArtists = new Set();
     const canEdit = () => !!(state.detail && state.detail.can_edit);
     const isOwner = () => !!(state.detail && state.detail.role === "owner");
@@ -363,43 +324,37 @@
       const pref = localStorage.getItem("fr-theme") || "system";
       const sys = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
       document.documentElement.dataset.frTheme = pref === "system" ? sys : pref;
-      $("#theme-seg").querySelectorAll("input").forEach(i => { i.checked = i.value === pref; });
+      $("#theme-seg").querySelectorAll("[data-theme]").forEach(b => b.classList.toggle("on", b.dataset.theme === pref));
     }
     matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme);
 
     // ── toast / dialogs ────────────────────────────────────────
-    // `action` = {label, run}. It gets the 4.2 s the toast is up; clicking the toast
-    // body still just dismisses it.
-    function toast(msg, icon = "ph-check", color = "var(--fr-success)", action = null) {
+    function toast(msg, action = null, tone = "") {
       const t = document.createElement("div");
-      t.className = "fr-toast";
-      t.innerHTML = `<i class="ph ${icon}" style="color:${color}"></i><span>${esc(msg)}</span>` +
-        (action ? `<button class="btn btn-ghost" data-toast-action style="flex:none;padding:4px 9px">${esc(action.label)}</button>` : "");
-      t.onclick = () => t.remove();
-      if (action) {
-        t.querySelector("[data-toast-action]").onclick = e => {
-          e.stopPropagation();
-          t.remove();
-          action.run();
-        };
-      }
+      t.className = "toast";
+      t.innerHTML = `<span>${esc(msg)}</span>` +
+        (action ? `<button class="btn btn-ghost btn-sm" data-toast-action>${esc(action.label)}</button>` : "") +
+        `<button class="btn btn-ghost btn-sm" data-toast-close aria-label="Dismiss">×</button>`;
+      if (tone) t.style.boxShadow = `var(--sh-3), inset 0 0 0 1px color-mix(in srgb, var(--${tone}) 50%, transparent)`;
+      t.querySelector("[data-toast-close]").onclick = () => t.remove();
+      if (action) t.querySelector("[data-toast-action]").onclick = () => { t.remove(); action.run(); };
       $("#toasts").appendChild(t);
-      setTimeout(() => t.remove(), 4200);
+      setTimeout(() => t.remove(), 4600);
     }
     function modal(inner) {
       const root = $("#dialog-root");
-      root.innerHTML = `<div class="dialog-backdrop"><div class="dialog">${inner}</div></div>`;
+      root.innerHTML = `<div class="backdrop"><div class="dialog">${inner}</div></div>`;
       const close = () => { root.innerHTML = ""; };
-      root.querySelector(".dialog-backdrop").onclick = e => { if (e.target === e.currentTarget) close(); };
+      root.querySelector(".backdrop").onclick = e => { if (e.target === e.currentTarget) close(); };
       return { root, close };
     }
-    function confirmDialog({ title, body, confirmLabel, danger = true, onConfirm }) {
+    function confirmDialog({ title, body, confirmLabel, cancelLabel = "Keep", onConfirm }) {
       const { root, close } = modal(`
         <span class="dialog-title">${esc(title)}</span>
-        <p class="dialog-body" style="margin:0">${esc(body)}</p>
+        <p class="dialog-body">${esc(body)}</p>
         <div class="dialog-actions">
-          <button class="btn btn-secondary" data-act="cancel">Cancel</button>
-          <button class="btn" data-act="ok" ${danger ? 'style="color:var(--fr-danger);border-color:color-mix(in srgb, var(--fr-danger) 70%, transparent)"' : "class=\"btn btn-primary\""}>${esc(confirmLabel)}</button>
+          <button class="btn btn-ghost" data-act="cancel">${esc(cancelLabel)}</button>
+          <button class="btn btn-danger" data-act="ok">${esc(confirmLabel)}</button>
         </div>`);
       root.querySelector('[data-act="cancel"]').onclick = close;
       root.querySelector('[data-act="ok"]').onclick = async () => { close(); await onConfirm(); };
@@ -407,9 +362,12 @@
     function promptDialog({ title, label, value = "", confirmLabel, onConfirm }) {
       const { root, close } = modal(`
         <span class="dialog-title">${esc(title)}</span>
-        <div class="field"><label>${esc(label)}</label><input class="input" id="pd-input" value="${esc(value)}" /></div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <span class="label">${esc(label)}</span>
+          <input class="input" id="pd-input" value="${esc(value)}" />
+        </div>
         <div class="dialog-actions">
-          <button class="btn btn-secondary" data-act="cancel">Cancel</button>
+          <button class="btn btn-ghost" data-act="cancel">Cancel</button>
           <button class="btn btn-primary" data-act="ok">${esc(confirmLabel)}</button>
         </div>`);
       const input = root.querySelector("#pd-input");
@@ -420,22 +378,19 @@
       input.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
     }
 
-    // ── data loading ───────────────────────────────────────────
+    // ── boot ───────────────────────────────────────────────────
     async function boot() {
       applyTheme();
-      // editor invite link: /?join=<token>
-      const params = new URLSearchParams(location.search);
-      const joinToken = params.get("join");
+      const joinToken = new URLSearchParams(location.search).get("join");
       try { state.me = await api("/me"); } catch { state.me = null; }
       renderTopbar();
-
       if (joinToken) {
         try {
-          const res = await api("/shares/join", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: joinToken }) });
+          const res = await api("/shares/join", jsonBody({ token: joinToken }));
           localStorage.setItem("fr-current-list", res.list_id);
-          toast(`You're now an editor of "${res.name}"`, "ph-users", "var(--color-accent)");
+          toast(`You're an editor of "${res.name}" now.`);
         } catch (e) {
-          toast(e.status === 400 ? "That's a view-only link." : "That invite link isn't live anymore.", "ph-warning", "var(--fr-danger)");
+          toast(e.status === 400 ? "That's a view-only link." : "That invite link isn't live anymore.", null, "alert");
         }
         history.replaceState({}, "", "/");
       }
@@ -445,9 +400,7 @@
     async function loadLists() {
       state.lists = await api("/lists");
       const saved = +localStorage.getItem("fr-current-list");
-      let cur = state.lists.find(l => l.id === saved)
-        || state.lists.find(l => l.is_default)
-        || state.lists[0];
+      const cur = state.lists.find(l => l.id === saved) || state.lists.find(l => l.is_default) || state.lists[0];
       if (!cur) { renderListBar(); return; }
       await selectList(cur.id);
     }
@@ -463,9 +416,9 @@
         const [detail, events] = await Promise.all([api(`/lists/${id}`), api(`/lists/${id}/events`)]);
         state.detail = detail; state.events = events; state.loading = false;
         applyDefaultCity();
-      } catch (e) {
+      } catch {
         state.loading = false;
-        toast("Couldn't open that list.", "ph-warning", "var(--fr-danger)");
+        toast("Couldn't open that list.", null, "alert");
       }
       render();
     }
@@ -482,20 +435,18 @@
     async function reloadCurrent() {
       const [detail, events] = await Promise.all([api(`/lists/${state.currentId}`), api(`/lists/${state.currentId}/events`)]);
       state.detail = detail; state.events = events;
-      // refresh the lists sidebar counts too
       state.lists = await api("/lists");
       render();
     }
 
     function render() { renderListBar(); renderArtists(); renderConcerts(); renderFilterButton(); }
 
-    // ── topbar / list bar ──────────────────────────────────────
+    // ── header ─────────────────────────────────────────────────
     function renderTopbar() {
       $("#avatar").textContent = initials(state.me);
       $("#p-avatar").textContent = initials(state.me);
       if (state.me) {
-        const local = (state.me.email || "").split("@")[0];
-        const dn = state.me.name || local || "Signed in";
+        const dn = state.me.name || (state.me.email || "").split("@")[0] || "Signed in";
         $("#me-name").textContent = dn;
         $("#me-email").textContent = state.me.email;
         $("#p-name").textContent = dn;
@@ -510,48 +461,67 @@
       if (d && d.role) { chip.hidden = false; chip.textContent = d.role; chip.classList.toggle("owner", d.role === "owner"); }
       else chip.hidden = true;
       const sic = $("#cur-list-shared");
-      if (d && d.shared_with_me) { sic.hidden = false; sic.innerHTML = '<i class="ph ph-users" title="Shared with you"></i>'; }
-      else if (d && d.shared_out) { sic.hidden = false; sic.innerHTML = '<i class="ph ph-share-network" title="You are sharing this"></i>'; }
+      if (d && d.shared_with_me) { sic.hidden = false; sic.textContent = "↙ shared"; sic.title = "Shared with you"; }
+      else if (d && d.shared_out) { sic.hidden = false; sic.textContent = "↗ sharing"; sic.title = "You are sharing this"; }
       else sic.hidden = true;
-      $("#btn-share-2").hidden = !isOwner();
-      $("#btn-rename").hidden = !isOwner();
-      $("#btn-delete").hidden = !(isOwner() && d && !d.is_default);
       $("#mi-share").hidden = !isOwner();
       $("#add-block").hidden = !canEdit();
+      renderCheckedLine();
+    }
+
+    // "checked 06:12 · next in 4 h 20 m" — the line that says the data is alive.
+    function renderCheckedLine() {
+      const el = $("#checked-line");
+      const iso = state.detail && state.detail.checked_at;
+      if (!iso) { el.textContent = ""; return; }
+      const d = new Date(/[Z+]/.test(iso.slice(10)) ? iso : iso + "Z");   // stored naive UTC
+      if (isNaN(d)) { el.textContent = ""; return; }
+      const mins = Math.max(0, Math.round((d.getTime() + 12 * 3600e3 - Date.now()) / 60000));
+      const due = mins === 0 ? "check due" : `next in ${Math.floor(mins / 60)} h ${pad(mins % 60)} m`;
+      el.textContent = `checked ${pad(d.getHours())}:${pad(d.getMinutes())} · ${due}`;
     }
 
     function renderListMenu() {
       const m = $("#list-menu");
+      const own = isOwner();
       m.innerHTML = state.lists.map(l => `
-        <button class="fr-menu-item ${l.id === state.currentId ? "active" : ""}" data-list="${l.id}">
-          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
-          ${l.shared_with_me ? '<i class="ph ph-users" style="font-size:13px;color:var(--color-accent)" title="Shared with you"></i>' : (l.shared_out ? '<i class="ph ph-share-network" style="font-size:13px;color:var(--color-accent)" title="You are sharing this"></i>' : "")}
-          ${l.role !== "owner" ? `<span class="fr-rolechip">${esc(l.role)}</span>` : ""}
-          <span class="fr-artist-count">${l.artist_count}</span>
+        <button class="menu-item ${l.id === state.currentId ? "on" : ""}" data-list="${l.id}">
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}${l.shared_with_me ? ' <span style="color:var(--text-mute);font-size:11px">↙</span>' : (l.shared_out ? ' <span style="color:var(--text-mute);font-size:11px">↗</span>' : "")}</span>
+          <span class="role ${l.role === "owner" ? "owner" : ""}">${esc(l.role)}</span>
         </button>`).join("") + `
-        <div style="border-top:1px solid var(--color-divider);margin-top:2.8px;padding-top:2.8px">
-          <button class="fr-menu-item" data-new="1"><i class="ph ph-plus" style="color:var(--color-accent)"></i> New list</button>
-        </div>`;
+        <div style="border-top:1px solid var(--line);margin:6px 4px"></div>
+        <button class="menu-item" data-new="1">＋ New list</button>
+        ${own ? `<button class="menu-item" data-rename="1">Rename</button>` : ""}
+        ${own ? `<button class="menu-item" data-share="1">Share this list</button>` : ""}
+        ${own && state.detail && !state.detail.is_default ? `<button class="menu-item danger" data-delete="1">Delete list</button>` : ""}`;
       m.querySelectorAll("[data-list]").forEach(b => b.onclick = () => selectList(+b.dataset.list));
       m.querySelector("[data-new]").onclick = createList;
+      const r = m.querySelector("[data-rename]"); if (r) r.onclick = () => { closeMenus(); renameList(); };
+      const s = m.querySelector("[data-share]"); if (s) s.onclick = openShare;
+      const d = m.querySelector("[data-delete]"); if (d) d.onclick = () => { closeMenus(); deleteList(); };
     }
 
-    // ── artists / concerts (unchanged visuals, list-scoped data) ─
-    // A bare "0" never said whether we'd looked, found nothing, or found only sold-out
+    // ── artists ────────────────────────────────────────────────
+    // A bare count never said whether we'd looked, found nothing, or found only sold-out
     // dates. This spells it out.
-    function artistNote(a) {
-      if (!a.event_count) {
-        return a.checked
-          ? `<span class="fr-artist-note" title="Checked — the source lists no upcoming dates">No events planned</span>`
-          : `<span class="fr-artist-note" title="Frontrow hasn't managed to check this artist yet">Not checked yet</span>`;
-      }
+    function artistState(a) {
+      if (!a.event_count) return a.checked ? { t: "no dates announced" } : { t: "not checked yet" };
       if (!a.bookable_count) {
-        if (a.sold_out_count) return `<span class="fr-artist-note out" title="${a.sold_out_count} of ${a.event_count} show(s) sold out"><i class="ph ph-prohibit"></i> Sold out</span>`;
-        if (a.cancelled_count) return `<span class="fr-artist-note out"><i class="ph ph-x-circle"></i> Cancelled</span>`;
-        return `<span class="fr-artist-note">No tickets</span>`;
+        if (a.sold_out_count) return { t: "all sold out", gone: true };
+        if (a.cancelled_count) return { t: "cancelled", gone: true };
+        return { t: "no tickets", gone: true };
       }
-      const soldOut = a.sold_out_count ? `<i class="ph ph-prohibit" title="${a.sold_out_count} sold out" style="color:var(--fr-danger)"></i>` : "";
-      return `<span class="fr-artist-note">${soldOut}<span class="fr-artist-count">${a.event_count}</span></span>`;
+      const n = `${a.event_count} show${a.event_count === 1 ? "" : "s"}`;
+      return { t: a.sold_out_count ? `${n} · ${a.sold_out_count} sold out` : n };
+    }
+
+    function monogram(name, image, size) {
+      const u = safeUrl(image);
+      const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * .34)}px`;
+      if (u) return `<span class="mono-circle" style="${style}"><img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></span>`;
+      const ini = (name || "?").replace(/[^A-Za-z0-9 ]/g, "").split(/\s+/).filter(Boolean)
+        .slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+      return `<span class="mono-circle" style="${style}">${esc(ini)}</span>`;
     }
 
     function renderArtists() {
@@ -559,26 +529,33 @@
       const arts = state.detail ? state.detail.artists : [];
       $("#artist-count").textContent = state.loading ? "" : arts.length;
       if (state.loading) {
-        box.innerHTML = `<div style="display:flex;flex-direction:column;gap:5.6px">${Array.from({length:4}).map(()=>`<div class="fr-skel" style="height:38px;border-radius:8px"></div>`).join("")}</div>`;
+        box.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px">${
+          Array.from({ length: 4 }).map(() => `<div class="skel" style="height:44px;border-radius:10px"></div>`).join("")}</div>`;
         return;
       }
       if (!arts.length) {
-        box.innerHTML = canEdit()
-          ? `<div class="fr-empty sm"><i class="ph ph-magnifying-glass"></i><span class="h">No artists yet</span><span class="text-muted" style="font-size:13px">Add one and Frontrow starts watching for shows.</span><button class="btn btn-primary" id="empty-add"><i class="ph ph-plus"></i> Add your first artist</button></div>`
-          : `<div class="fr-empty sm"><i class="ph ph-magnifying-glass"></i><span class="h">No artists yet</span><span class="text-muted" style="font-size:13px">The owner hasn't added anyone to this list.</span></div>`;
+        box.innerHTML = `<div class="empty" style="padding:18px 4px">
+          <h4>No artists yet</h4>
+          <p>${canEdit() ? "Add one and Frontrow starts watching for shows." : "The owner hasn't added anyone to this list."}</p>
+          ${canEdit() ? `<button class="btn btn-primary btn-sm" id="empty-add">Track your first artist</button>` : ""}</div>`;
         const ea = $("#empty-add"); if (ea) ea.onclick = () => $("#fr-add").focus();
         return;
       }
-      box.innerHTML = `<div style="display:flex;flex-direction:column;gap:2.8px">${arts.map(a => `
-        <div class="fr-artist-row">
-          ${artistAvatar(a.image)}
-          <span class="fr-artist-name">${esc(a.name)}</span>
-          ${artistNote(a)}
-          ${canEdit() ? `<button class="btn btn-ghost btn-icon fr-rm" data-id="${a.id}" data-name="${esc(a.name)}" aria-label="Remove artist"><i class="ph ph-trash" style="font-size:15px"></i></button>` : ""}
-        </div>`).join("")}</div>`;
-      box.querySelectorAll(".fr-rm").forEach(b => b.onclick = () => removeArtist(+b.dataset.id, b.dataset.name));
+      box.innerHTML = arts.map(a => {
+        const st = artistState(a);
+        return `<div class="art">
+          ${monogram(a.name, a.image, 32)}
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+            <span class="a-name">${esc(a.name)}</span>
+            <span class="a-st${st.gone ? " gone" : ""}">${esc(st.t)}</span>
+          </span>
+          ${canEdit() ? `<button class="rm" data-id="${a.id}" data-name="${esc(a.name)}" aria-label="Remove ${esc(a.name)}">×</button>` : ""}
+        </div>`;
+      }).join("");
+      box.querySelectorAll(".rm").forEach(b => b.onclick = () => removeArtist(+b.dataset.id, b.dataset.name));
     }
 
+    // ── filtering ──────────────────────────────────────────────
     const cityFiltered = () => {
       const byCity = state.cityFilter.size
         ? state.events.filter(e => e.city && state.cityFilter.has(e.city))
@@ -595,163 +572,9 @@
       return match ? cityFiltered().filter(match) : cityFiltered();
     }
     function syncChips() {
-      document.querySelectorAll("#chips .fr-chip").forEach(c => c.classList.toggle("active", c.dataset.quick === state.quick));
+      document.querySelectorAll("#chips .chip").forEach(c => c.classList.toggle("on", c.dataset.quick === state.quick));
     }
 
-    function renderConcerts() {
-      const base = cityFiltered();
-      const setC = (k, v) => { const el = document.querySelector(`#chips [data-c="${k}"]`); if (el) el.textContent = v; };
-      setC("all", base.length);
-      for (const [key, match] of Object.entries(QUICK)) setC(key, base.filter(match).length);
-
-      const box = $("#concerts");
-      if (state.loading) { box.innerHTML = `<div class="fr-grid">${Array.from({length:4}).map(()=>`<div class="fr-skel" style="height:150px"></div>`).join("")}</div>`; return; }
-      if (!state.events.length) {
-        box.innerHTML = `<div class="fr-empty"><i class="ph ph-binoculars"></i><span class="h">Nothing announced yet</span><span class="text-muted" style="font-size:14px;max-width:44ch">Frontrow is watching ${state.detail?state.detail.artists.length:0} artist(s). New shows land here as soon as they're announced.</span><button class="btn btn-secondary" id="empty-refresh"><i class="ph ph-arrows-clockwise"></i> Check again now</button></div>`;
-        $("#empty-refresh").onclick = refresh; return;
-      }
-      const list = quickFiltered();
-      if (!list.length) {
-        const msg = { attending: "You haven't marked a ticket as bought yet.", new: "Nothing new right now.",
-                      soldout: "Nothing on this list is sold out. Good." }[state.quick]
-                    || (state.radiusKm ? `Nothing within ${state.radiusKm} km — try a wider radius.` : "Try a different city.");
-        box.innerHTML = `<div class="fr-empty"><i class="ph ph-funnel"></i><span class="h">No shows match this filter</span><span class="text-muted" style="font-size:14px">${msg}</span><button class="btn btn-primary" id="empty-clear"><i class="ph ph-x"></i> Show all</button></div>`;
-        $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.radiusKm = 0; state.quick = "all"; syncChips(); renderConcerts(); renderFilterButton(); }; return;
-      }
-
-      // Leaflet holds a reference to its container, so tear it down before any other
-      // view overwrites that div.
-      if (state.view !== "map" && state.map) { state.map.remove(); state.map = null; state.mapLayer = null; }
-      if (state.view === "calendar") { renderCalendar(box, list); return; }
-      if (state.view === "map") { renderMap(box, list); return; }
-
-      // group by artist, sorted by each artist's next show
-      const groups = new Map();
-      for (const e of list) {
-        if (!groups.has(e.artist)) groups.set(e.artist, []);
-        groups.get(e.artist).push(e);
-      }
-      const byDate = (a, b) => (a.start_date === null) - (b.start_date === null) || String(a.start_date).localeCompare(String(b.start_date));
-      const groupArr = [...groups.entries()].map(([artist, events]) => {
-        events.sort(byDate);
-        return { artist, events, next: (events.find(e => e.start_date) || {}).start_date || null };
-      }).sort((a, b) => (a.next === null) - (b.next === null) || String(a.next).localeCompare(String(b.next)));
-      if (groupArr.length === 1) expandedArtists.add(groupArr[0].artist);
-
-      box.innerHTML = groupArr.map(g => {
-        const open = expandedArtists.has(g.artist);
-        const bought = g.events.filter(e => e.attending).length;
-        const soldOut = g.events.filter(e => e.availability === "sold_out").length;
-        const low = cheapest(g.events);
-        const bits = [`${g.events.length} show${g.events.length === 1 ? "" : "s"}`];
-        if (low) bits.push(`from ${money(low)}`);
-        if (soldOut) bits.push(`${soldOut} sold out`);
-        if (bought) bits.push(`${bought} bought`);
-        return `<div class="fr-group">
-          <button class="fr-group-head" data-artist="${esc(g.artist)}" aria-expanded="${open}">
-            <i class="ph ph-caret-${open ? "down" : "right"}"></i>
-            ${artistAvatar(g.events[0].artist_image, 28)}
-            <span class="fr-group-name">${esc(g.artist)}</span>
-            <span class="fr-group-count">${esc(bits.join(" · "))}</span>
-            <span class="fr-group-next">${g.next ? "NEXT · " + esc(shortDate(g.next)) : "DATE TBA"}</span>
-          </button>
-          <div class="fr-group-body" ${open ? "" : "hidden"}><div class="fr-grid">${g.events.map(cardHTML).join("")}</div></div>
-        </div>`;
-      }).join("");
-      box.querySelectorAll(".fr-group-head").forEach(b => b.onclick = () => {
-        const a = b.dataset.artist;
-        expandedArtists.has(a) ? expandedArtists.delete(a) : expandedArtists.add(a);
-        renderConcerts();
-      });
-      box.querySelectorAll("[data-attend]").forEach(b => b.onclick = () => toggleAttend(b.dataset.attend, b.dataset.on !== "1"));
-    }
-
-    // ── map (OpenStreetMap via Leaflet, loaded on first use) ───
-    const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    let leafletPromise = null;
-    function ensureLeaflet() {
-      if (leafletPromise) return leafletPromise;
-      leafletPromise = new Promise((resolve, reject) => {
-        const link = document.createElement("link");
-        link.rel = "stylesheet"; link.href = LEAFLET_CSS;
-        document.head.appendChild(link);
-        const s = document.createElement("script");
-        s.src = LEAFLET_JS; s.onload = resolve; s.onerror = () => reject(new Error("leaflet"));
-        document.head.appendChild(s);
-      });
-      return leafletPromise;
-    }
-
-    function pinHTML(e) {
-      const cls = e.attending ? "att" : (AVAIL[e.availability] ? "out" : "");
-      const icon = e.attending ? "ph-ticket" : (AVAIL[e.availability] ? "ph-prohibit" : "ph-music-notes");
-      return `<span class="fr-pin ${cls}"><i class="ph ${icon}"></i></span>`;
-    }
-
-    function renderMap(box, list) {
-      const located = list.filter(e => typeof e.lat === "number" && typeof e.lon === "number");
-      const missing = list.length - located.length;
-      if (!box.querySelector("#fr-map")) {
-        box.innerHTML = `<div class="fr-map" id="fr-map"></div>
-          <div class="fr-maphint" id="fr-maphint"></div>`;
-      }
-      $("#fr-maphint").textContent = missing
-        ? `${located.length} of ${list.length} shows placed — ${missing} venue${missing === 1 ? "" : "s"} not located yet.`
-        : `${located.length} show${located.length === 1 ? "" : "s"} on the map.`;
-
-      ensureLeaflet().then(() => {
-        if (!state.map) {
-          state.map = L.map("fr-map", { scrollWheelZoom: false }).setView([51.2, 10.4], 5.4);
-          // Attribution is required by the OSM tile policy and must stay visible.
-          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          }).addTo(state.map);
-          state.mapLayer = L.layerGroup().addTo(state.map);
-        }
-        state.mapLayer.clearLayers();
-
-        const home = homePoint();
-        if (home) {
-          L.circleMarker([home.lat, home.lon], { radius: 6, color: "var(--color-accent)", fillOpacity: .9 })
-            .bindPopup(`Home · ${esc(home.city || "your location")}`).addTo(state.mapLayer);
-          if (state.radiusKm) {
-            L.circle([home.lat, home.lon], { radius: state.radiusKm * 1000, color: "var(--color-accent)",
-              weight: 1, fillOpacity: .06 }).addTo(state.mapLayer);
-          }
-        }
-
-        for (const e of located) {
-          const marker = L.marker([e.lat, e.lon], {
-            icon: L.divIcon({ html: pinHTML(e), className: "", iconSize: [26, 26], iconAnchor: [13, 24] }),
-            title: `${e.artist} — ${placeLine(e)}`,
-          });
-          const link = safeUrl(e.link);
-          const price = money(e);
-          const av = AVAIL[e.availability];
-          marker.bindPopup(`<div class="fr-mappop">
-            <b>${esc(e.artist)}</b>
-            <span>${esc(dateLine(e.start_date))}</span>
-            <span>${esc(placeLine(e))}</span>
-            ${price ? `<span>from ${esc(price)}</span>` : ""}
-            ${av ? `<span style="color:var(--fr-danger)">${esc(av.label)}</span>` : ""}
-            ${e.attending ? `<span style="color:var(--color-accent)">Ticket bought</span>` : ""}
-            ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">Open on Eventim</a>` : ""}
-          </div>`);
-          marker.addTo(state.mapLayer);
-        }
-
-        const pts = located.map(e => [e.lat, e.lon]);
-        if (home) pts.push([home.lat, home.lon]);
-        if (pts.length > 1) state.map.fitBounds(pts, { padding: [30, 30], maxZoom: 11 });
-        else if (pts.length === 1) state.map.setView(pts[0], 10);
-        state.map.invalidateSize();
-      }).catch(() => {
-        box.innerHTML = `<div class="fr-empty"><i class="ph ph-wifi-slash"></i><span class="h">Couldn't load the map</span><span class="text-muted" style="font-size:14px">The map library didn't load. The list and calendar still work.</span></div>`;
-      });
-    }
-
-    // ── radius ─────────────────────────────────────────────────
     // Origin is whichever the user picked: their browser location this session, or the
     // default city from Profile (geocoded server-side and cached).
     const homePoint = () => state.geoPoint || (state.me && state.me.home) || null;
@@ -769,18 +592,146 @@
       return distanceKm(home, { lat: e.lat, lon: e.lon }) <= state.radiusKm;
     }
     function useMyLocation() {
-      if (!navigator.geolocation) { toast("This browser won't share a location.", "ph-warning", "var(--fr-danger)"); return; }
+      if (!navigator.geolocation) { toast("This browser won't share a location.", null, "alert"); return; }
       navigator.geolocation.getCurrentPosition(
         pos => {
-          state.geoPoint = { lat: pos.coords.latitude, lon: pos.coords.longitude, city: "your location" };
+          state.geoPoint = { lat: pos.coords.latitude, lon: pos.coords.longitude, city: "you" };
           if (!state.radiusKm) state.radiusKm = 50;
           renderFilterPop(); renderConcerts(); renderFilterButton();
-          toast("Using your current location", "ph-crosshair", "var(--color-accent)");
+          toast("Using your current location.");
         },
-        () => toast("Couldn't get your location.", "ph-warning", "var(--fr-danger)")
+        () => toast("Couldn't get your location.", null, "alert")
       );
     }
 
+    // ── the horizon ────────────────────────────────────────────
+    // Six months of runway. Every show is a dot; today is the bar on the left. This is
+    // the answer to "anyone playing near me soon?" before you read a single row.
+    function renderHorizon(list) {
+      const panel = $("#horizon-panel");
+      const now = new Date();
+      const dated = list.filter(e => e.start_date && new Date(e.start_date) >= now);
+      if (!dated.length) { panel.hidden = true; return; }
+      panel.hidden = false;
+      const start = now.getTime();
+      const end = new Date(now.getFullYear(), now.getMonth() + 6, now.getDate()).getTime();
+      const labels = ["today"];
+      for (let i = 1; i < 6; i++) labels.push(MO[(now.getMonth() + i) % 12].toLowerCase());
+      $("#horizon-months").innerHTML = labels.map(l => `<span>${esc(l)}</span>`).join("");
+      $("#horizon-line").innerHTML = `<span class="horizon-now"></span>` + dated.map(e => {
+        const pct = Math.min(100, Math.max(0, (new Date(e.start_date).getTime() - start) / (end - start) * 100));
+        const cls = e.attending ? "is-held" : (AVAIL[e.availability] ? "is-gone" : (e.is_new ? "is-new" : ""));
+        return `<span class="horizon-dot ${cls}" style="left:${pct.toFixed(2)}%" title="${esc(e.artist + " — " + shortDate(e.start_date))}"></span>`;
+      }).join("");
+    }
+
+    // ── concerts ───────────────────────────────────────────────
+    function renderConcerts() {
+      const base = cityFiltered();
+      const setC = (k, v) => { const el = document.querySelector(`#chips [data-c="${k}"]`); if (el) el.textContent = v; };
+      setC("all", base.length);
+      for (const [key, match] of Object.entries(QUICK)) setC(key, base.filter(match).length);
+
+      const box = $("#concerts");
+      if (state.loading) {
+        $("#horizon-panel").hidden = true;
+        box.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">${
+          Array.from({ length: 3 }).map(() => `<div class="skel" style="height:120px"></div>`).join("")}</div>`;
+        return;
+      }
+      if (!state.events.length) {
+        $("#horizon-panel").hidden = true;
+        box.innerHTML = `<div class="panel empty">
+          <h4>Nothing announced yet</h4>
+          <p>The horizon's empty. Frontrow is watching ${state.detail ? state.detail.artists.length : 0} artist(s) and checks again every 12 hours.</p>
+          <button class="btn btn-sm" id="empty-refresh">Check again now</button></div>`;
+        $("#empty-refresh").onclick = refresh; return;
+      }
+
+      const list = quickFiltered();
+      renderHorizon(list);
+      // Leaflet holds a reference to its container, so tear it down before any other
+      // view overwrites that div.
+      if (state.view !== "map" && state.map) { state.map.remove(); state.map = null; state.mapLayer = null; }
+
+      if (!list.length) {
+        const msg = { attending: "You haven't marked a ticket as bought yet.", new: "Nothing new since your last look.",
+                      soldout: "Nothing on this list is sold out. Good." }[state.quick]
+                    || (state.radiusKm ? `Nothing within ${state.radiusKm} km. Widen the radius, or clear the city list.`
+                                       : "Widen the radius, or clear the city list.");
+        box.innerHTML = `<div class="panel empty"><h4>No shows match this filter</h4><p>${esc(msg)}</p>
+          <button class="btn btn-primary btn-sm" id="empty-clear">Clear filter</button></div>`;
+        $("#empty-clear").onclick = () => {
+          state.cityFilter.clear(); state.radiusKm = 0; state.quick = "all";
+          syncChips(); renderConcerts(); renderFilterButton();
+        };
+        return;
+      }
+
+      if (state.view === "calendar") { renderCalendar(box, list); return; }
+      if (state.view === "map") { renderMap(box, list); return; }
+
+      const groups = new Map();
+      for (const e of list) {
+        if (!groups.has(e.artist)) groups.set(e.artist, []);
+        groups.get(e.artist).push(e);
+      }
+      const byDate = (a, b) => (a.start_date === null) - (b.start_date === null) || String(a.start_date).localeCompare(String(b.start_date));
+      const groupArr = [...groups.entries()].map(([artist, events]) => {
+        events.sort(byDate);
+        return { artist, events, image: events[0].artist_image, next: (events.find(e => e.start_date) || {}).start_date || null };
+      }).sort((a, b) => (a.next === null) - (b.next === null) || String(a.next).localeCompare(String(b.next)));
+      if (groupArr.length === 1) expandedArtists.add(groupArr[0].artist);
+
+      box.innerHTML = groupArr.map(g => {
+        const open = expandedArtists.has(g.artist);
+        const bought = g.events.filter(e => e.attending).length;
+        const soldOut = g.events.filter(e => e.availability === "sold_out").length;
+        const low = cheapest(g.events);
+        const bits = [`${g.events.length} show${g.events.length === 1 ? "" : "s"}`];
+        if (low) bits.push(`from ${money(low)}`);
+        if (soldOut) bits.push(`${soldOut} sold out`);
+        if (bought) bits.push(`${bought} bought`);
+        return `<div class="panel group">
+          <button class="g-head" data-artist="${esc(g.artist)}" aria-expanded="${open}">
+            <span class="g-caret" aria-hidden="true">${open ? "▾" : "▸"}</span>
+            ${monogram(g.artist, g.image, 38)}
+            <span class="g-name">${esc(g.artist)}</span>
+            <span class="g-sum">${esc(bits.join(" · "))}</span>
+            <span class="g-next">${g.next ? "next " + esc(shortDate(g.next)) : "date tba"}</span>
+          </button>
+          <div ${open ? "" : "hidden"}>${g.events.map(rowHTML).join("")}</div>
+        </div>`;
+      }).join("");
+      box.querySelectorAll(".g-head").forEach(b => b.onclick = () => {
+        const a = b.dataset.artist;
+        expandedArtists.has(a) ? expandedArtists.delete(a) : expandedArtists.add(a);
+        renderConcerts();
+      });
+      box.querySelectorAll("[data-attend]").forEach(b => b.onclick = () => toggleAttend(b.dataset.attend, b.dataset.on !== "1"));
+    }
+
+    function rowHTML(e) {
+      const av = AVAIL[e.availability];
+      const link = safeUrl(e.link);
+      const price = money(e);
+      return `<div class="row${av ? " is-gone" : ""}">
+        ${e.is_new ? `<span class="r-new" title="Announced in the last 14 days"></span>` : `<span></span>`}
+        <span class="r-date">${esc(dateLine(e.start_date))}</span>
+        <span class="r-title" title="${esc(e.name || e.artist)}">${esc(e.name || e.artist)}</span>
+        <span class="r-place" title="${esc(placeLine(e))}">${esc(placeLine(e))}</span>
+        <span class="r-price">${price ? esc(price) : ""}</span>
+        <span class="r-tag"><span class="tag ${av ? av.tone : ""}">${av ? esc(av.label) : "available"}</span></span>
+        <span class="r-act">
+          ${e.attending
+            ? `<button class="btn btn-held btn-pill btn-sm" data-attend="${esc(e.product_id)}" data-on="1" aria-pressed="true">✓ Ticket</button>`
+            : `<button class="btn btn-pill btn-sm" data-attend="${esc(e.product_id)}" data-on="0" aria-pressed="false">Got a ticket</button>`}
+          ${link ? `<a class="btn btn-ghost btn-pill btn-sm" href="${esc(link)}" target="_blank" rel="noopener">${isBookable(e) ? "Tickets" : "Event page"} ↗</a>` : ""}
+        </span>
+      </div>`;
+    }
+
+    // ── calendar ───────────────────────────────────────────────
     function renderCalendar(box, list) {
       if (!state.calMonth) { const d = new Date(); state.calMonth = { y: d.getFullYear(), m: d.getMonth() }; }
       const { y, m } = state.calMonth;
@@ -790,135 +741,199 @@
         const d = new Date(e.start_date);
         if (!isNaN(d) && d.getFullYear() === y && d.getMonth() === m) (byDay[d.getDate()] = byDay[d.getDate()] || []).push(e);
       }
+      const evClass = e => e.attending ? "held" : (AVAIL[e.availability] ? "gone" : "");
+      const evLink = e => {
+        const u = safeUrl(e.link);
+        return `<a class="cal-ev ${evClass(e)}" ${u ? `href="${esc(u)}" target="_blank" rel="noopener"` : ""} title="${esc(e.artist + " — " + placeLine(e))}">${esc(e.artist)}</a>`;
+      };
       const startDow = (new Date(y, m, 1).getDay() + 6) % 7;
       const days = new Date(y, m + 1, 0).getDate();
       const today = new Date();
-      let cells = DOW.map(d => `<div class="fr-cal-dow">${d}</div>`).join("");
-      for (let i = 0; i < startDow; i++) cells += `<div class="fr-cal-cell empty"></div>`;
+      let cells = DOW.map(d => `<div class="cal-dow">${d}</div>`).join("");
+      for (let i = 0; i < startDow; i++) cells += `<div class="cal-cell empty"></div>`;
       for (let day = 1; day <= days; day++) {
         const evd = byDay[day] || [];
         const isToday = today.getFullYear() === y && today.getMonth() === m && today.getDate() === day;
-        cells += `<div class="fr-cal-cell${isToday ? " today" : ""}"><span class="fr-cal-day">${day}</span>${evd.map(e => {
-          const u = safeUrl(e.link);
-          const av = AVAIL[e.availability];
-          const tip = [e.artist, placeLine(e), av ? av.label : null, e.attending ? "Ticket bought" : null].filter(Boolean).join(" — ");
-          return `<a class="fr-cal-ev${e.attending ? " att" : ""}${av ? " out" : ""}" ${u ? `href="${esc(u)}" target="_blank" rel="noopener"` : ""} title="${esc(tip)}">${esc(e.artist)}</a>`;
-        }).join("")}</div>`;
+        cells += `<div class="cal-cell${isToday ? " today" : ""}"><span class="cal-day">${day}</span>${evd.map(evLink).join("")}</div>`;
       }
+      // Mobile gets an agenda instead: a 7-column grid at 390px is unreadable.
+      const monthEvents = Object.keys(byDay).map(Number).sort((a, b) => a - b).flatMap(d => byDay[d]);
+      const agenda = monthEvents.length
+        ? monthEvents.map(e => {
+            const d = new Date(e.start_date), av = AVAIL[e.availability];
+            return `<div class="ag-row">
+              <span class="ag-when">${esc(WD[d.getDay()])} ${pad(d.getDate())}<br />${pad(d.getHours())}:${pad(d.getMinutes())}</span>
+              <span style="min-width:0">
+                <span style="display:block;font:500 14px/1.2 var(--ui);overflow:hidden;text-overflow:ellipsis;white-space:nowrap${av ? ";color:var(--text-dim)" : ""}">${esc(e.artist)}</span>
+                <span class="status">${esc(placeLine(e))}</span></span>
+              <span class="tag ${av ? av.tone : "held"}">${e.attending ? "✓ ticket" : (av ? esc(av.label) : "")}</span>
+            </div>`;
+          }).join("")
+        : `<p class="prose" style="color:var(--text-dim);padding:14px 4px;margin:0">Nothing this month.</p>`;
       const tba = list.filter(e => !e.start_date);
-      box.innerHTML = `
-        <div class="fr-cal-head">
-          <button class="btn btn-secondary btn-icon" id="cal-prev" aria-label="Previous month"><i class="ph ph-caret-left"></i></button>
-          <button class="btn btn-secondary btn-icon" id="cal-next" aria-label="Next month"><i class="ph ph-caret-right"></i></button>
-          <span class="fr-cal-title">${MONTHS_FULL[m]} ${y}</span>
-          <button class="btn btn-ghost" id="cal-today">Today</button>
+
+      box.innerHTML = `<div class="panel" style="padding:18px 20px 20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="btn btn-icon" id="cal-prev" aria-label="Previous month">‹</button>
+          <span style="font:600 16px/1 var(--ui);min-width:170px;text-align:center">${MONTHS_FULL[m]} ${y}</span>
+          <button class="btn btn-icon" id="cal-next" aria-label="Next month">›</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost btn-sm" id="cal-today">Today</button>
         </div>
-        <div class="fr-cal-grid">${cells}</div>
-        ${tba.length ? `<div class="fr-cal-tba"><span class="fr-mono-note">DATE TBA</span>${tba.map(e => {
-          const av = AVAIL[e.availability];
-          return `<span class="tag tag-neutral"${av ? ` style="text-decoration:line-through;text-decoration-color:var(--fr-danger)" title="${esc(av.label)}"` : ""}>${esc(e.artist)}</span>`;
-        }).join(" ")}</div>` : ""}`;
+        <div class="cal-grid">${cells}</div>
+        <div class="agenda">${agenda}</div>
+        ${tba.length ? `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+          <span class="label">date tba</span>
+          ${tba.map(e => `<span class="tag${AVAIL[e.availability] ? " gone" : ""}" style="text-transform:none;letter-spacing:0;font-size:12px">${esc(e.artist)}</span>`).join("")}</div>` : ""}
+      </div>`;
       $("#cal-prev").onclick = () => shiftMonth(-1);
       $("#cal-next").onclick = () => shiftMonth(1);
       $("#cal-today").onclick = () => { const d = new Date(); state.calMonth = { y: d.getFullYear(), m: d.getMonth() }; renderConcerts(); };
     }
-    function shiftMonth(delta) { let { y, m } = state.calMonth; m += delta; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } state.calMonth = { y, m }; renderConcerts(); }
-
-    // "unknown" = scraped before Frontrow tracked availability; treated as bookable
-    // rather than falsely marked unavailable.
-    const AVAIL = {
-      sold_out:    { label: "Sold out",   tone: "danger", icon: "ph-prohibit" },
-      cancelled:   { label: "Cancelled",  tone: "danger", icon: "ph-x-circle" },
-      unavailable: { label: "No tickets", tone: "muted",  icon: "ph-clock-countdown" },
-    };
-    const isBookable = e => e.availability === "available" || e.availability === "unknown" || !e.availability;
-    const money = e => e.price == null ? null : new Intl.NumberFormat(undefined,
-      { style: "currency", currency: e.currency || "EUR" }).format(e.price);
-    const cheapest = events => {
-      const priced = events.filter(e => e.price != null);
-      return priced.length ? priced.reduce((lo, e) => e.price < lo.price ? e : lo) : null;
-    };
-
-    function ticketButton(e) {
-      const link = safeUrl(e.link);
-      if (!link) return `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`;
-      const open = `href="${esc(link)}" target="_blank" rel="noopener"`;
-      if (isBookable(e)) return `<a class="btn btn-primary" ${open}><i class="ph ph-ticket"></i> Tickets</a>`;
-      return `<a class="btn btn-secondary" ${open}><i class="ph ph-arrow-square-out"></i> Event page</a>`;
+    function shiftMonth(delta) {
+      let { y, m } = state.calMonth; m += delta;
+      if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
+      state.calMonth = { y, m }; renderConcerts();
     }
 
-    function cardHTML(e) {
-      const av = AVAIL[e.availability];
-      const availTag = av ? `<span class="fr-avail ${av.tone}" style="margin-left:auto"><i class="ph ${av.icon}"></i> ${av.label}</span>` : "";
-      const boughtLine = e.attending ? `<span class="fr-going-line"><i class="ph ph-ticket"></i> Ticket bought</span>` : "";
-      // Always available: you may well hold a ticket for a show that later sold out.
-      const attendBtn = e.attending
-        ? `<button class="btn fr-attend" data-attend="${esc(e.product_id)}" data-on="1" aria-pressed="true" style="color:var(--color-accent);border-color:var(--color-accent);padding:5px 9px"><i class="ph ph-ticket"></i> Ticket bought</button>`
-        : `<button class="btn btn-ghost fr-attend" data-attend="${esc(e.product_id)}" data-on="0" aria-pressed="false" style="padding:5px 9px"><i class="ph ph-plus-circle"></i> Got a ticket</button>`;
-      const from = money(e);
-      return `<article class="fr-card${e.attending ? " is-attending" : ""}${av ? " is-out" : ""}">
-        <div class="fr-card-main">
-          <div class="fr-kicker-row">
-            <span class="fr-serial" style="margin-left:0">${esc(serial(e))}</span>
-            ${availTag}
-          </div>
-          <span class="fr-title">${esc(e.name || e.artist)}</span>${boughtLine}
-        </div>
-        <div class="fr-perf"></div>
-        <div class="fr-stub">
-          <div class="fr-meta">
-            <span>${esc(dateLine(e.start_date))}</span>
-            <span class="fr-placeline">${esc(placeLine(e))}</span>
-            ${from ? `<span class="fr-price">FROM ${esc(from)}</span>` : ""}
-          </div>
-          <div class="fr-stub-actions">${attendBtn}${ticketButton(e)}</div>
-        </div></article>`;
+    // ── map ────────────────────────────────────────────────────
+    const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    let leafletPromise = null;
+    function ensureLeaflet() {
+      if (leafletPromise) return leafletPromise;
+      leafletPromise = new Promise((resolve, reject) => {
+        const link = document.createElement("link");
+        link.rel = "stylesheet"; link.href = LEAFLET_CSS;
+        document.head.appendChild(link);
+        const s = document.createElement("script");
+        s.src = LEAFLET_JS; s.onload = resolve; s.onerror = () => reject(new Error("leaflet"));
+        document.head.appendChild(s);
+      });
+      return leafletPromise;
     }
 
+    function renderMap(box, list) {
+      const located = list.filter(e => typeof e.lat === "number" && typeof e.lon === "number");
+      const missing = list.filter(e => typeof e.lat !== "number");
+      if (!box.querySelector("#fr-map")) {
+        box.innerHTML = `<div class="panel" style="padding:14px">
+          <div class="map" id="fr-map"></div>
+          <div class="maplegend">
+            <span class="legdot"><i></i> on sale</span>
+            <span class="legdot held"><i></i> ticket bought</span>
+            <span class="legdot gone"><i></i> unavailable</span>
+            <span style="flex:1"></span>
+            <span class="status" id="fr-maphint"></span>
+          </div>
+          <div id="fr-mapmissing"></div>
+        </div>`;
+      }
+      $("#fr-maphint").textContent = `${located.length} of ${list.length} placed`;
+      $("#fr-mapmissing").innerHTML = missing.length
+        ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+             <span class="label">${missing.length} show${missing.length === 1 ? "" : "s"} without a location</span>
+             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${
+               missing.map(e => `<span class="tag" style="text-transform:none;letter-spacing:0;font-size:12px">${esc(e.artist)}${e.city ? " · " + esc(e.city) : ""}</span>`).join("")}</div></div>`
+        : "";
+
+      ensureLeaflet().then(() => {
+        if (!state.map) {
+          state.map = L.map("fr-map", { scrollWheelZoom: false }).setView([51.2, 10.4], 5.4);
+          // Attribution is required by the OSM tile policy and must stay visible.
+          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          }).addTo(state.map);
+          state.mapLayer = L.layerGroup().addTo(state.map);
+        }
+        state.mapLayer.clearLayers();
+        const home = homePoint();
+        if (home) {
+          L.circleMarker([home.lat, home.lon], { radius: 5, color: "#46E39B", fillOpacity: .9, weight: 2 })
+            .bindPopup(`Home · ${esc(home.city || "your location")}`).addTo(state.mapLayer);
+          if (state.radiusKm) {
+            L.circle([home.lat, home.lon], { radius: state.radiusKm * 1000, color: "#46E39B", weight: 1, fillOpacity: .05 })
+              .addTo(state.mapLayer);
+          }
+        }
+        for (const e of located) {
+          const cls = e.attending ? "held" : (AVAIL[e.availability] ? "gone" : "");
+          const glyph = e.attending ? "✓" : (AVAIL[e.availability] ? "·" : "•");
+          const price = money(e), av = AVAIL[e.availability], link = safeUrl(e.link);
+          L.marker([e.lat, e.lon], {
+            icon: L.divIcon({ html: `<span class="pin ${cls}">${glyph}</span>`, className: "", iconSize: [24, 24], iconAnchor: [12, 12] }),
+            title: `${e.artist} — ${placeLine(e)}`,
+          }).bindPopup(`<div style="display:flex;flex-direction:column;gap:3px">
+              <b style="font:600 14px/1.2 var(--ui)">${esc(e.artist)}</b>
+              <span class="mono" style="font-size:12px">${esc(dateLine(e.start_date))}</span>
+              <span style="font-size:12px;color:var(--text-dim)">${esc(placeLine(e))}</span>
+              ${price ? `<span class="mono" style="font-size:12px">${esc(price)}</span>` : ""}
+              ${av ? `<span class="tag gone">${esc(av.label)}</span>` : ""}
+              ${e.attending ? `<span class="tag held">✓ ticket bought</span>` : ""}
+              ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener" style="font-size:12px">Open on Eventim ↗</a>` : ""}
+            </div>`).addTo(state.mapLayer);
+        }
+        const pts = located.map(e => [e.lat, e.lon]);
+        if (home) pts.push([home.lat, home.lon]);
+        if (pts.length > 1) state.map.fitBounds(pts, { padding: [30, 30], maxZoom: 11 });
+        else if (pts.length === 1) state.map.setView(pts[0], 10);
+        state.map.invalidateSize();
+      }).catch(() => {
+        box.innerHTML = `<div class="panel empty"><h4>Couldn't load the map</h4>
+          <p>The map library didn't load. The list and calendar still work.</p></div>`;
+      });
+    }
+
+    // ── filter popover ─────────────────────────────────────────
     function renderFilterButton() {
-      const n = state.cityFilter.size;
-      const home = homePoint();
-      const label = state.radiusKm && home
-        ? `${state.radiusKm} km · ${home.city || "you"}`
+      const n = state.cityFilter.size, home = homePoint();
+      const label = state.radiusKm && home ? `${state.radiusKm} km · ${home.city || "you"}`
         : n === 0 ? "All cities" : n === 1 ? [...state.cityFilter][0] : `${n} cities`;
       $("#filter-label").textContent = label;
+      $("#btn-filter").classList.toggle("on-accent", n > 0 || !!state.radiusKm);
     }
 
     function renderFilterPop() {
       const pop = $("#filter-pop");
       const tab = state.filterTab;
-      const counts = {}; state.events.forEach(e => { if (e.city) counts[e.city] = (counts[e.city]||0)+1; });
-      const cities = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
+      const counts = {}; state.events.forEach(e => { if (e.city) counts[e.city] = (counts[e.city] || 0) + 1; });
+      const cities = Object.keys(counts).sort((a, b) => a.localeCompare(b));
       const cityRows = cities.length ? cities.map(c => {
         const on = state.cityFilter.has(c);
-        return `<label class="radio" style="justify-content:flex-start;gap:8.4px;padding:5.6px;border-radius:6px;${on?"background:color-mix(in srgb, var(--color-accent) 12%, transparent)":""}">
-          <input type="checkbox" data-city="${esc(c)}" ${on?"checked":""}><span class="dot" style="border-radius:4px"></span>
-          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c)}</span>
-          <span style="font-family:var(--fr-mono);font-size:10px;color:color-mix(in srgb, var(--color-text) 42%, transparent)">${counts[c]}</span></label>`;
-      }).join("") : `<span class="text-muted" style="font-size:13px;padding:5.6px">No cities yet.</span>`;
+        return `<label style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-radius:8px;cursor:pointer;position:relative">
+          <input type="checkbox" data-city="${esc(c)}" ${on ? "checked" : ""} style="position:absolute;opacity:0;width:1px;height:1px" />
+          <span style="width:18px;height:18px;flex:none;border-radius:6px;display:grid;place-items:center;font:700 11px/1 var(--ui);
+                       background:${on ? "var(--accent)" : "transparent"};color:var(--accent-ink);
+                       box-shadow:inset 0 0 0 1.5px ${on ? "var(--accent)" : "var(--line-strong)"}">${on ? "✓" : ""}</span>
+          <span style="flex:1;font:500 13px/1 var(--ui);color:${on ? "var(--text)" : "var(--text-dim)"}">${esc(c)}</span>
+          <span class="status">${counts[c]}</span>
+        </label>`;
+      }).join("") : `<p class="prose" style="color:var(--text-dim);font-size:13px;padding:6px 4px;margin:0">No cities yet.</p>`;
 
       const home = homePoint();
       const withCoords = state.events.filter(e => typeof e.lat === "number").length;
       const radiusBody = home
-        ? `<span class="fr-mono-note">AROUND ${esc((home.city || "you").toUpperCase())}</span>
-           <div class="fr-chips" style="margin-top:2.8px">
-             <button type="button" class="fr-chip ${state.radiusKm ? "" : "active"}" data-km="0">Any distance</button>
-             ${RADIUS_PRESETS.map(km => `<button type="button" class="fr-chip ${state.radiusKm === km ? "active" : ""}" data-km="${km}">${km} km</button>`).join("")}
+        ? `<span class="label">around ${esc(home.city || "you")}</span>
+           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+             <button class="chip ${state.radiusKm ? "" : "on"}" data-km="0">Any</button>
+             ${RADIUS_PRESETS.map(km => `<button class="chip ${state.radiusKm === km ? "on-accent" : ""}" data-km="${km}">${km} km</button>`).join("")}
            </div>
-           <span class="text-muted" style="font-size:11.5px">${withCoords} of ${state.events.length} shows have a location. Anything unlocated is hidden while a radius is on.</span>`
-        : `<span class="text-muted" style="font-size:13px">Set a default city in Profile, or use your current location, to filter by distance.</span>`;
+           <p class="prose" style="font-size:12px;color:var(--text-mute);margin:4px 0 0">${withCoords} of ${state.events.length} shows have a location. Unplaced shows are hidden while a radius is on.</p>`
+        : `<p class="prose" style="font-size:13px;color:var(--text-dim);margin:0">Set a default city in Profile, or use your current location, to filter by distance.</p>`;
 
       pop.innerHTML = `
-        <div class="fr-chips">
-          <button type="button" class="fr-chip ${tab === "cities" ? "active" : ""}" data-tab="cities"><i class="ph ph-map-pin"></i> Cities</button>
-          <button type="button" class="fr-chip ${tab === "radius" ? "active" : ""}" data-tab="radius"><i class="ph ph-crosshair"></i> Radius</button>
+        <div class="seg" style="width:100%">
+          <button class="seg-opt ${tab === "cities" ? "on" : ""}" data-tab="cities" style="flex:1">Cities</button>
+          <button class="seg-opt ${tab === "radius" ? "on" : ""}" data-tab="radius" style="flex:1">Radius</button>
         </div>
-        ${tab === "cities" ? `<div class="fr-city">${cityRows}</div>`
-                           : `<div style="display:flex;flex-direction:column;gap:5.6px">${radiusBody}</div>`}
-        <div style="display:flex;gap:5.6px;align-items:center;border-top:1px solid var(--color-divider);padding-top:8.4px;flex-wrap:wrap">
-          ${tab === "radius" ? `<button class="btn btn-ghost" data-act="geo"><i class="ph ph-crosshair"></i> Use my location</button>`
-                             : `<button class="btn btn-ghost" data-act="all">All cities</button>`}
-          <button class="btn btn-primary" data-act="done" style="margin-left:auto">Done</button>
+        ${tab === "cities"
+          ? `<div style="display:flex;flex-direction:column;max-height:240px;overflow:auto">${cityRows}</div>`
+          : `<div style="display:flex;flex-direction:column;gap:6px">${radiusBody}</div>`}
+        <div style="display:flex;gap:8px;border-top:1px solid var(--line);padding-top:12px">
+          <button class="btn btn-primary" data-act="done" style="flex:1">Apply</button>
+          ${tab === "radius"
+            ? `<button class="btn btn-ghost" data-act="geo">Use my location</button>`
+            : `<button class="btn btn-ghost" data-act="clear">Clear</button>`}
         </div>`;
 
       // stopPropagation matters: these handlers re-render the popover, which detaches the
@@ -927,17 +942,20 @@
       pop.querySelectorAll("[data-tab]").forEach(b => b.onclick = e => {
         e.stopPropagation(); state.filterTab = b.dataset.tab; renderFilterPop();
       });
-      pop.querySelectorAll("input[data-city]").forEach(i => i.onchange = () => {
-        i.checked ? state.cityFilter.add(i.dataset.city) : state.cityFilter.delete(i.dataset.city);
-        renderConcerts(); renderFilterButton();
-      });
-      pop.querySelectorAll("[data-km]").forEach(b => b.onclick = e => {
+      pop.querySelectorAll("input[data-city]").forEach(i => i.onchange = e => {
         e.stopPropagation();
-        state.radiusKm = +b.dataset.km;
+        i.checked ? state.cityFilter.add(i.dataset.city) : state.cityFilter.delete(i.dataset.city);
         renderFilterPop(); renderConcerts(); renderFilterButton();
       });
-      const all = pop.querySelector('[data-act="all"]');
-      if (all) all.onclick = e => { e.stopPropagation(); state.cityFilter.clear(); renderFilterPop(); renderConcerts(); renderFilterButton(); };
+      pop.querySelectorAll("[data-km]").forEach(b => b.onclick = e => {
+        e.stopPropagation(); state.radiusKm = +b.dataset.km;
+        renderFilterPop(); renderConcerts(); renderFilterButton();
+      });
+      const clear = pop.querySelector('[data-act="clear"]');
+      if (clear) clear.onclick = e => {
+        e.stopPropagation(); state.cityFilter.clear();
+        renderFilterPop(); renderConcerts(); renderFilterButton();
+      };
       const geo = pop.querySelector('[data-act="geo"]');
       if (geo) geo.onclick = useMyLocation;
       pop.querySelector('[data-act="done"]').onclick = () => toggleFilter(false);
@@ -946,36 +964,42 @@
     // ── actions ────────────────────────────────────────────────
     async function addArtist() {
       closeSuggest();
-      const input = $("#fr-add"); const name = input.value.trim();
+      const input = $("#fr-add"), name = input.value.trim();
       $("#add-warning").innerHTML = "";
-      if (!name) { input.style.borderColor = "var(--fr-danger)"; input.focus(); return; }
-      input.style.borderColor = "";
-      const btn = $("#btn-add"); btn.disabled = true;
-      btn.innerHTML = `<i class="ph ph-spinner" style="animation:frSpin .9s linear infinite"></i> Checking…`;
+      if (!name) { input.focus(); return; }
+      const btn = $("#btn-add");
+      btn.disabled = true;
+      btn.innerHTML = `<span style="display:inline-block;animation:frSpin .9s linear infinite">◐</span> Checking…`;
       try {
-        const res = await api(`/lists/${state.currentId}/artists`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+        const res = await api(`/lists/${state.currentId}/artists`, jsonBody({ name }));
         input.value = "";
         if (res && res.warning) {
-          $("#add-warning").innerHTML = `<div class="fr-warning"><i class="ph ph-warning" style="color:var(--fr-danger);margin-top:2px"></i><span>Couldn't reach the ticket source right now — Frontrow will keep checking and show new shows automatically.</span></div>`;
+          $("#add-warning").innerHTML = `<div class="warn"><span aria-hidden="true">!</span>
+            <span>Couldn't reach the ticket source right now. Frontrow will keep checking and show new dates automatically.</span></div>`;
         } else {
           const n = (res && res.concerts_found) || 0;
-          toast(`Tracking ${name} — found ${n} concert${n===1?"":"s"}`, "ph-ticket", "var(--color-accent)");
+          toast(`${name} is on the watch. ${n} show${n === 1 ? "" : "s"} found straight away.`);
         }
         await reloadCurrent();
       } catch (e) {
-        toast(e.status === 403 ? "You can't edit this list." : "Couldn't add that artist — try again.", "ph-warning", "var(--fr-danger)");
-      } finally { btn.disabled = false; btn.innerHTML = `<i class="ph ph-plus"></i> Track`; }
+        toast(e.status === 403 ? "You can't edit this list." : "Couldn't add that artist — try again.", null, "alert");
+      } finally { btn.disabled = false; btn.textContent = "Track"; }
     }
 
     function removeArtist(id, name) {
-      confirmDialog({ title: `Remove ${name} from "${state.detail.name}"?`, body: "Their shows disappear from this list. You can add them back any time.", confirmLabel: "Remove", onConfirm: async () => {
-        const listId = state.currentId;
-        try {
-          await api(`/lists/${listId}/artists/${id}`, { method: "DELETE" });
-          await reloadCurrent();
-          toast(`Removed ${name}`, "ph-trash", "var(--fr-danger)", { label: "Undo", run: () => undoRemove(listId, id, name) });
-        } catch { toast("Couldn't remove that artist.", "ph-warning", "var(--fr-danger)"); }
-      }});
+      confirmDialog({
+        title: `Stop tracking ${name}?`,
+        body: "Their shows leave this list too. You can always track them again.",
+        confirmLabel: "Remove", cancelLabel: "Keep",
+        onConfirm: async () => {
+          const listId = state.currentId;
+          try {
+            await api(`/lists/${listId}/artists/${id}`, { method: "DELETE" });
+            await reloadCurrent();
+            toast(`Removed ${name}.`, { label: "Undo", run: () => undoRemove(listId, id, name) });
+          } catch { toast("Couldn't remove that artist.", null, "alert"); }
+        }
+      });
     }
 
     async function undoRemove(listId, artistId, name) {
@@ -984,45 +1008,51 @@
       try {
         await api(`/lists/${listId}/artists/${artistId}`, { method: "POST" });
         if (state.currentId === listId) await reloadCurrent();
-        toast(`${name} is back`, "ph-arrow-counter-clockwise", "var(--color-accent)");
-      } catch { toast(`Couldn't bring ${name} back.`, "ph-warning", "var(--fr-danger)"); }
+        toast(`${name} is back.`);
+      } catch { toast(`Couldn't bring ${name} back.`, null, "alert"); }
     }
 
     async function toggleAttend(productId, going) {
       const ev = state.events.find(e => e.product_id === productId); if (!ev) return;
       try {
-        await api("/events/attending", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_id: productId, attending: going }) });
+        await api("/events/attending", jsonBody({ product_id: productId, attending: going }));
         ev.attending = going; renderConcerts();
-        toast(going ? `Ticket saved — ${ev.artist}` : "Ticket removed", "ph-ticket", "var(--color-accent)");
-      } catch { toast("Couldn't update that show.", "ph-warning", "var(--fr-danger)"); }
+        toast(going ? "Ticket marked as bought. Enjoy it." : "Ticket removed.");
+      } catch { toast("Couldn't update that show.", null, "alert"); }
     }
 
     async function refresh() {
-      toast("Checking the ticket sources…", "ph-arrows-clockwise", "var(--color-accent)");
-      try { await api("/scrape", { method: "POST" }); await reloadCurrent(); toast("Up to date", "ph-check", "var(--fr-success)"); }
-      catch { toast("Couldn't refresh right now.", "ph-warning", "var(--fr-danger)"); }
+      toast("Checking the ticket sources…");
+      try { await api("/scrape", { method: "POST" }); await reloadCurrent(); toast("Up to date."); }
+      catch { toast("Couldn't refresh right now.", null, "alert"); }
     }
 
     function createList() {
       closeMenus();
-      promptDialog({ title: "New list", label: "List name", confirmLabel: "Create", onConfirm: async v => {
-        try { const l = await api("/lists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: v }) });
-          state.lists.push(l); await selectList(l.id); toast(`Created "${v}"`, "ph-check", "var(--fr-success)"); }
-        catch { toast("Couldn't create the list.", "ph-warning", "var(--fr-danger)"); }
+      promptDialog({ title: "New list", label: "list name", confirmLabel: "Create", onConfirm: async v => {
+        try {
+          const l = await api("/lists", jsonBody({ name: v }));
+          state.lists.push(l); await selectList(l.id); toast(`Created "${v}".`);
+        } catch { toast("Couldn't create the list.", null, "alert"); }
       }});
     }
     function renameList() {
-      promptDialog({ title: "Rename list", label: "List name", value: state.detail.name, confirmLabel: "Save", onConfirm: async v => {
-        try { await api(`/lists/${state.currentId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: v }) }); await reloadCurrent(); toast("List renamed", "ph-check", "var(--fr-success)"); }
-        catch { toast("Couldn't rename the list.", "ph-warning", "var(--fr-danger)"); }
+      promptDialog({ title: "Rename list", label: "list name", value: state.detail.name, confirmLabel: "Save", onConfirm: async v => {
+        try { await api(`/lists/${state.currentId}`, jsonBody({ name: v }, "PATCH")); await reloadCurrent(); toast("List renamed."); }
+        catch { toast("Couldn't rename the list.", null, "alert"); }
       }});
     }
     function deleteList() {
-      confirmDialog({ title: `Delete "${state.detail.name}"?`, body: "The list and its sharing links go away. The artists stay in the catalog. This can't be undone.", confirmLabel: "Delete list", onConfirm: async () => {
-        try { await api(`/lists/${state.currentId}`, { method: "DELETE" }); toast("List deleted", "ph-trash", "var(--fr-danger)");
-          localStorage.removeItem("fr-current-list"); await loadLists(); }
-        catch { toast("Couldn't delete the list.", "ph-warning", "var(--fr-danger)"); }
-      }});
+      confirmDialog({ title: `Delete "${state.detail.name}"?`,
+        body: "The list and its sharing links go away. The artists stay in Frontrow's catalog. This can't be undone.",
+        confirmLabel: "Delete list", cancelLabel: "Cancel",
+        onConfirm: async () => {
+          try {
+            await api(`/lists/${state.currentId}`, { method: "DELETE" });
+            toast("List deleted.");
+            localStorage.removeItem("fr-current-list"); await loadLists();
+          } catch { toast("Couldn't delete the list.", null, "alert"); }
+        }});
     }
 
     // ── share dialog ───────────────────────────────────────────
@@ -1035,104 +1065,130 @@
       const origin = location.origin;
       const urlFor = s => s.role === "editor" ? `${origin}/?join=${s.token}` : `${origin}/s/${s.token}`;
       const linkRows = shares.length ? shares.map(s => `
-        <div class="fr-shrow">
-          <span class="fr-rolechip ${s.role==='editor'?'owner':''}">${s.role==='editor'?'Can edit':'View only'}</span>
-          <input class="input" readonly value="${esc(urlFor(s))}" style="flex:1 1 150px;font-family:var(--fr-mono);font-size:11.5px" />
-          <button class="btn btn-secondary btn-icon" data-copy="${esc(urlFor(s))}" title="Copy"><i class="ph ph-copy"></i></button>
-          <button class="btn btn-ghost btn-icon" data-revoke="${s.id}" title="Revoke link" style="color:var(--fr-danger)"><i class="ph ph-link-break"></i></button>
-        </div>`).join("") : `<span class="text-muted" style="font-size:13px">No links yet.</span>`;
+        <div class="shrow">
+          <span class="mono" style="flex:1 1 180px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${esc(urlFor(s).replace(/^https?:\/\//, ""))}</span>
+          <span class="role ${s.role === "editor" ? "owner" : ""}">${esc(s.role)}</span>
+          <button class="btn btn-ghost btn-sm" data-copy="${esc(urlFor(s))}">Copy</button>
+          <button class="btn btn-ghost btn-sm" data-revoke="${s.id}" style="color:var(--alert)">Revoke</button>
+        </div>`).join("") : `<p class="prose" style="font-size:13px;color:var(--text-dim);margin:0">No links yet.</p>`;
+
       const peopleRows = mem.members.map(m => `
-        <div class="fr-shrow">
-          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px">${esc(m.email)}${m.is_you ? ' <span class="text-muted">(you)</span>' : ""}</span>
-          <span class="fr-rolechip ${m.role==='owner'?'owner':''}">${esc(m.role)}</span>
-          ${m.role !== "owner" ? `<button class="btn btn-ghost btn-icon" data-rmember="${m.user_id}" title="Remove" style="color:var(--fr-danger)"><i class="ph ph-x"></i></button>` : `<span style="width:36px"></span>`}
+        <div class="shrow">
+          ${monogram(m.name || m.email, null, 28)}
+          <span style="flex:1 1 140px;min-width:0;display:flex;flex-direction:column;gap:1px">
+            <span style="font:500 13px/1.2 var(--ui);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.name || m.email.split("@")[0])}${m.is_you ? " (you)" : ""}</span>
+            <span class="status" style="font-size:10.5px">${esc(m.email)}</span>
+          </span>
+          <span class="role ${m.role === "owner" ? "owner" : ""}">${esc(m.role)}</span>
+          ${m.role !== "owner" ? `<button class="btn btn-ghost btn-sm" data-rmember="${m.user_id}" aria-label="Remove ${esc(m.email)}">×</button>` : `<span style="width:30px"></span>`}
         </div>`).join("") + mem.invites.map(i => `
-        <div class="fr-shrow">
-          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px">${esc(i.email)} <span class="text-muted">· pending</span></span>
-          <span class="fr-rolechip">${esc(i.role)}</span>
-          <button class="btn btn-ghost btn-icon" data-cancelinv="${i.id}" title="Cancel invite" style="color:var(--fr-danger)"><i class="ph ph-x"></i></button>
+        <div class="shrow">
+          <span class="mono-circle" style="width:28px;height:28px;font-size:12px">✉</span>
+          <span style="flex:1 1 140px;min-width:0;display:flex;flex-direction:column;gap:1px">
+            <span style="font:500 13px/1.2 var(--ui);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.email)}</span>
+            <span class="status" style="font-size:10.5px">invited — pending</span>
+          </span>
+          <span class="role">${esc(i.role)}</span>
+          <button class="btn btn-ghost btn-sm" data-cancelinv="${i.id}" aria-label="Cancel invite">×</button>
         </div>`).join("");
+
+      const note = state.detail.share_note || "";
       const { root, close } = modal(`
-        <span class="dialog-title">Share "${esc(state.detail.name)}"</span>
-        <div style="display:flex;flex-direction:column;gap:16.8px;max-height:64vh;overflow:auto">
-          <div style="display:flex;flex-direction:column;gap:8.4px">
-            <h6 style="margin:0">Links</h6>
-            <p class="text-muted" style="margin:0;font-size:12.5px">A <b>view</b> link is public and read-only. An <b>editor</b> link lets a signed-in, invited person add and remove artists.</p>
-            <div style="display:flex;flex-direction:column;gap:5.6px">${linkRows}</div>
-            <div style="display:flex;gap:5.6px;flex-wrap:wrap">
-              <button class="btn btn-secondary" data-create="viewer"><i class="ph ph-eye"></i> View link</button>
-              <button class="btn btn-secondary" data-create="editor"><i class="ph ph-pencil-simple"></i> Editor link</button>
-            </div>
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+            <span class="dialog-title">Share “${esc(state.detail.name)}”</span>
+            <span class="prose" style="font-size:13px;color:var(--text-dim)">Links and people see the list live — it updates as you do.</span>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8.4px">
-            <h6 style="margin:0">People</h6>
-            <div style="display:flex;gap:5.6px;flex-wrap:wrap;align-items:flex-end">
-              <input class="input" id="inv-email" placeholder="Invite by email" autocomplete="off" style="flex:1 1 170px" />
-              <select class="input" id="inv-role" style="width:auto"><option value="editor">Can edit</option><option value="viewer">View only</option></select>
-              <button class="btn btn-primary" id="inv-btn"><i class="ph ph-paper-plane-tilt"></i> Invite</button>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:5.6px">${peopleRows}</div>
-            <span class="text-muted" style="font-size:11.5px">Invited people also need to be on Frontrow's allow-list to sign in.</span>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8.4px">
-            <h6 style="margin:0">Say something (optional)</h6>
-            <p class="text-muted" style="margin:0;font-size:12.5px">Shows at the top of your public page, next to your name.</p>
-            <div style="display:flex;gap:5.6px;flex-wrap:wrap;align-items:flex-end">
-              <input class="input" id="note-input" maxlength="280" placeholder="Come along to any of these" style="flex:1 1 200px" value="${esc(state.detail.share_note || "")}" />
-              <button class="btn btn-secondary" id="note-btn">Save</button>
-            </div>
-            <a class="btn btn-ghost" id="preview-btn" style="align-self:flex-start;padding:4px 8px" hidden><i class="ph ph-arrow-square-out"></i> Preview the public page</a>
+          <button class="btn btn-ghost btn-sm" data-act="done" aria-label="Close">×</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <span class="label">links</span>
+          <div style="display:flex;flex-direction:column;gap:6px">${linkRows}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="btn btn-sm" data-create="viewer">＋ View link</button>
+            <button class="btn btn-sm" data-create="editor">＋ Editor link</button>
+            <a class="btn btn-ghost btn-sm" id="preview-btn" hidden>Preview the public page ↗</a>
           </div>
         </div>
-        <div class="dialog-actions"><button class="btn btn-primary" data-act="done">Done</button></div>`);
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <span class="label">people</span>
+          <div style="display:flex;flex-direction:column;gap:6px">${peopleRows}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input class="input" id="inv-email" placeholder="Invite by email…" autocomplete="off" style="flex:1 1 180px;width:auto" />
+            <select class="input" id="inv-role" style="width:auto"><option value="editor">editor</option><option value="viewer">viewer</option></select>
+            <button class="btn btn-primary btn-sm" id="inv-btn">Invite</button>
+          </div>
+          <span class="prose" style="font-size:12px;color:var(--text-mute)">Invited people also need to be on Frontrow's allow-list to sign in.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span class="label">say something</span>
+            <span class="status" style="margin-left:auto"><span id="note-count">${note.length}</span> / 280</span>
+          </div>
+          <input class="input" id="note-input" maxlength="280" placeholder="Fontaines in September — who's coming?" value="${esc(note)}" />
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span class="prose" style="font-size:12px;color:var(--text-mute);flex:1 1 180px">Shows on the shared page, under your name.</span>
+            <button class="btn btn-sm" id="note-btn">Save note</button>
+          </div>
+        </div>`);
+
       const reopen = () => { close(); openShare(); };
-      root.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.copy); toast("Link copied", "ph-copy", "var(--color-accent)"); });
-      root.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => { await api(`/shares/${b.dataset.revoke}`, { method: "DELETE" }).catch(() => {}); reopen(); });
-      root.querySelectorAll("[data-create]").forEach(b => b.onclick = async () => { await api(`/lists/${state.currentId}/shares`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: b.dataset.create }) }).catch(() => toast("Couldn't create the link.", "ph-warning", "var(--fr-danger)")); reopen(); });
-      root.querySelectorAll("[data-rmember]").forEach(b => b.onclick = async () => { await api(`/lists/${state.currentId}/members/${b.dataset.rmember}`, { method: "DELETE" }).catch(() => {}); reopen(); });
-      root.querySelectorAll("[data-cancelinv]").forEach(b => b.onclick = async () => { await api(`/invites/${b.dataset.cancelinv}`, { method: "DELETE" }).catch(() => {}); reopen(); });
+      root.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => {
+        navigator.clipboard?.writeText(b.dataset.copy); toast("Link copied.");
+      });
+      root.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => {
+        await api(`/shares/${b.dataset.revoke}`, { method: "DELETE" }).catch(() => {}); reopen();
+      });
+      root.querySelectorAll("[data-create]").forEach(b => b.onclick = async () => {
+        await api(`/lists/${state.currentId}/shares`, jsonBody({ role: b.dataset.create }))
+          .catch(() => toast("Couldn't create the link.", null, "alert"));
+        reopen();
+      });
+      root.querySelectorAll("[data-rmember]").forEach(b => b.onclick = async () => {
+        await api(`/lists/${state.currentId}/members/${b.dataset.rmember}`, { method: "DELETE" }).catch(() => {}); reopen();
+      });
+      root.querySelectorAll("[data-cancelinv]").forEach(b => b.onclick = async () => {
+        await api(`/invites/${b.dataset.cancelinv}`, { method: "DELETE" }).catch(() => {}); reopen();
+      });
       const doInvite = async () => {
         const email = root.querySelector("#inv-email").value.trim();
         if (!email) { root.querySelector("#inv-email").focus(); return; }
-        const role = root.querySelector("#inv-role").value;
         try {
-          const r = await api(`/lists/${state.currentId}/invites`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, role }) });
-          toast(r.status === "added" ? `Added ${email}` : `Invited ${email}`, "ph-paper-plane-tilt", "var(--color-accent)");
+          const r = await api(`/lists/${state.currentId}/invites`, jsonBody({ email, role: root.querySelector("#inv-role").value }));
+          toast(r.status === "added" ? `Added ${email}.` : `Invited ${email}.`);
           reopen();
-        } catch (e) { toast(e.status === 400 ? "Enter a valid email." : "Couldn't send that invite.", "ph-warning", "var(--fr-danger)"); }
+        } catch (e) { toast(e.status === 400 ? "Enter a valid email." : "Couldn't send that invite.", null, "alert"); }
       };
       root.querySelector("#inv-btn").onclick = doInvite;
       root.querySelector("#inv-email").addEventListener("keydown", e => { if (e.key === "Enter") doInvite(); });
 
+      const noteInput = root.querySelector("#note-input");
+      noteInput.addEventListener("input", () => { root.querySelector("#note-count").textContent = noteInput.value.length; });
       const saveNote = async () => {
-        const note = root.querySelector("#note-input").value.trim();
+        const v = noteInput.value.trim();
         try {
-          const r = await api(`/lists/${state.currentId}/share-note`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note }) });
+          const r = await api(`/lists/${state.currentId}/share-note`, jsonBody({ note: v }, "PUT"));
           state.detail.share_note = r.share_note;
-          toast(note ? "Note saved" : "Note removed", "ph-chat-centered-text", "var(--color-accent)");
-        } catch { toast("Couldn't save that note.", "ph-warning", "var(--fr-danger)"); }
+          toast(v ? "Note saved." : "Note removed.");
+        } catch { toast("Couldn't save that note.", null, "alert"); }
       };
       root.querySelector("#note-btn").onclick = saveNote;
-      root.querySelector("#note-input").addEventListener("keydown", e => { if (e.key === "Enter") saveNote(); });
+      noteInput.addEventListener("keydown", e => { if (e.key === "Enter") saveNote(); });
+
       // Only a viewer link maps to /s/<token>; an editor link is a join URL, so there's
       // nothing to preview until a view link exists.
       const viewLink = shares.find(s => s.role === "viewer");
       const preview = root.querySelector("#preview-btn");
       preview.hidden = !viewLink;
       if (viewLink) { preview.href = `${origin}/s/${viewLink.token}`; preview.target = "_blank"; preview.rel = "noopener"; }
-      root.querySelector('[data-act="done"]').onclick = async () => { close(); try { state.lists = await api("/lists"); state.detail = await api(`/lists/${state.currentId}`); render(); } catch {} };
+
+      root.querySelector('[data-act="done"]').onclick = async () => {
+        close();
+        try { state.lists = await api("/lists"); state.detail = await api(`/lists/${state.currentId}`); render(); } catch {}
+      };
     }
 
-    // ── menus / views ──────────────────────────────────────────
-    function closeMenus() { $("#menu").hidden = true; $("#list-menu").hidden = true; toggleFilter(false); }
-    function toggleFilter(open) { const p = $("#filter-pop"), b = $("#btn-filter"); const show = open ?? p.hidden; if (show) renderFilterPop(); p.hidden = !show; b.setAttribute("aria-expanded", show); b.style.boxShadow = show ? "inset 0 0 0 1px var(--color-accent)" : ""; }
-    function showView(v) {
-      $("#view-dashboard").hidden = v !== "dashboard";
-      $("#view-profile").hidden = v !== "profile";
-      if (v === "profile") renderProfile();
-      closeMenus();
-    }
-
+    // ── profile ────────────────────────────────────────────────
     function renderProfile() {
       $("#p-listname").textContent = state.detail ? state.detail.name : "this list";
       $("#p-clear").disabled = !canEdit();
@@ -1147,27 +1203,42 @@
 
     async function saveDefaultCity(city) {
       try {
-        state.me = await api("/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ default_city: city }) });
-        toast(city ? `Opening in ${city} from now on` : "Default city cleared", "ph-map-pin", "var(--color-accent)");
-      } catch { toast("Couldn't save that preference.", "ph-warning", "var(--fr-danger)"); }
+        state.me = await api("/me", jsonBody({ default_city: city }, "PATCH"));
+        toast(city ? `Opening in ${city} from now on.` : "Default city cleared.");
+        renderFilterButton();
+      } catch { toast("Couldn't save that preference.", null, "alert"); }
     }
 
     function clearList() {
-      confirmDialog({ title: `Remove every artist from "${state.detail.name}"?`, body: "The list goes empty. The artists stay in Frontrow's catalog, so any other list keeps them — but this list can't be undone in one click.", confirmLabel: "Remove all", onConfirm: async () => {
-        try {
-          const r = await api(`/lists/${state.currentId}/artists`, { method: "DELETE" });
-          await reloadCurrent();
-          showView("dashboard");
-          toast(`Removed ${r.removed} artist${r.removed === 1 ? "" : "s"}`, "ph-trash", "var(--fr-danger)");
-        } catch { toast("Couldn't clear the list.", "ph-warning", "var(--fr-danger)"); }
-      }});
+      confirmDialog({ title: `Remove every artist from "${state.detail.name}"?`,
+        body: "The list goes empty. The artists stay in Frontrow's catalog, so any other list keeps them.",
+        confirmLabel: "Remove all", cancelLabel: "Keep",
+        onConfirm: async () => {
+          try {
+            const r = await api(`/lists/${state.currentId}/artists`, { method: "DELETE" });
+            await reloadCurrent(); showView("dashboard");
+            toast(`Removed ${r.removed} artist${r.removed === 1 ? "" : "s"}.`);
+          } catch { toast("Couldn't clear the list.", null, "alert"); }
+        }});
     }
 
-    // ── events ─────────────────────────────────────────────────
-    $("#btn-add").onclick = addArtist;
-    $("#fr-add").addEventListener("keydown", e => { if (e.key === "Enter") addArtist(); });
+    // ── menus / views ──────────────────────────────────────────
+    function closeMenus() { $("#menu").hidden = true; $("#list-menu").hidden = true; toggleFilter(false); }
+    function toggleFilter(open) {
+      const p = $("#filter-pop"), b = $("#btn-filter");
+      const show = open ?? p.hidden;
+      if (show) renderFilterPop();
+      p.hidden = !show;
+      b.setAttribute("aria-expanded", show);
+    }
+    function showView(v) {
+      $("#view-dashboard").hidden = v !== "dashboard";
+      $("#view-profile").hidden = v !== "profile";
+      if (v === "profile") renderProfile();
+      closeMenus();
+    }
 
-    // add-artist autocomplete (cache-first via /api/artists/search → Deezer)
+    // ── autocomplete ───────────────────────────────────────────
     const suggBox = $("#add-suggest");
     let suggestTimer, suggestSeq = 0;
     function closeSuggest() { suggBox.hidden = true; $("#fr-add").setAttribute("aria-expanded", "false"); }
@@ -1178,9 +1249,9 @@
       if (seq !== suggestSeq) return;                 // a newer keystroke already fired
       if (!items.length) { closeSuggest(); return; }
       suggBox.innerHTML = items.map(it => `
-        <button type="button" class="fr-menu-item" data-name="${esc(it.name)}">
-          ${artistAvatar(it.image, 22)}
-          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</span>
+        <button type="button" class="menu-item" data-name="${esc(it.name)}">
+          ${monogram(it.name, it.image, 24)}
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)">${esc(it.name)}</span>
         </button>`).join("");
       suggBox.querySelectorAll("[data-name]").forEach(b => b.onmousedown = e => {
         e.preventDefault();                            // keep focus; fire before blur
@@ -1190,6 +1261,10 @@
       });
       suggBox.hidden = false; $("#fr-add").setAttribute("aria-expanded", "true");
     }
+
+    // ── wiring ─────────────────────────────────────────────────
+    $("#btn-add").onclick = addArtist;
+    $("#fr-add").addEventListener("keydown", e => { if (e.key === "Enter") addArtist(); });
     $("#fr-add").addEventListener("input", () => {
       const q = $("#fr-add").value.trim();
       clearTimeout(suggestTimer);
@@ -1197,13 +1272,36 @@
       suggestTimer = setTimeout(() => runSuggest(q), 220);
     });
     $("#fr-add").addEventListener("blur", () => setTimeout(closeSuggest, 150));
-    $("#btn-refresh").onclick = refresh; $("#btn-refresh-2").onclick = refresh;
-    $("#btn-menu").onclick = e => { e.stopPropagation(); const m = $("#menu"); const s = m.hidden; closeMenus(); m.hidden = !s; };
-    $("#btn-listswitch").onclick = e => { e.stopPropagation(); const m = $("#list-menu"); const s = m.hidden; closeMenus(); if (s) renderListMenu(); m.hidden = !s; };
-    $("#btn-share-2").onclick = openShare; $("#mi-share").onclick = openShare;
-    $("#btn-rename").onclick = renameList; $("#btn-delete").onclick = deleteList;
+    $("#btn-refresh").onclick = refresh;
+    $("#btn-menu").onclick = e => {
+      e.stopPropagation(); const m = $("#menu"); const s = m.hidden;
+      closeMenus(); m.hidden = !s; $("#btn-menu").setAttribute("aria-expanded", s);
+    };
+    $("#btn-listswitch").onclick = e => {
+      e.stopPropagation(); const m = $("#list-menu"); const s = m.hidden;
+      closeMenus(); if (s) renderListMenu(); m.hidden = !s;
+      $("#btn-listswitch").setAttribute("aria-expanded", s);
+    };
+    $("#mi-share").onclick = openShare;
     $("#mi-profile").onclick = () => showView("profile");
     $("#btn-back").onclick = () => showView("dashboard");
+    $("#btn-filter").onclick = e => { e.stopPropagation(); toggleFilter(); };
+    $("#chips").addEventListener("click", e => {
+      const b = e.target.closest("[data-quick]"); if (!b) return;
+      state.quick = b.dataset.quick; syncChips(); renderConcerts();
+    });
+    $("#view-seg").addEventListener("click", e => {
+      const b = e.target.closest("[data-view]"); if (!b) return;
+      state.view = b.dataset.view;
+      $("#view-seg").querySelectorAll("[data-view]").forEach(x => {
+        const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-selected", on);
+      });
+      renderConcerts();
+    });
+    $("#theme-seg").addEventListener("click", e => {
+      const b = e.target.closest("[data-theme]"); if (!b) return;
+      localStorage.setItem("fr-theme", b.dataset.theme); applyTheme();
+    });
     $("#p-city").addEventListener("change", e => saveDefaultCity(e.target.value));
     $("#p-clear").onclick = clearList;
     // "Signing out…" while the proxy clears the cookie. The href stays authoritative,
@@ -1211,12 +1309,8 @@
     document.querySelectorAll('a[href^="/oauth2/sign_out"]').forEach(a => a.addEventListener("click", e => {
       e.preventDefault();
       $("#signout-veil").hidden = false;
-      setTimeout(() => { location.href = a.href; }, 280);
+      setTimeout(() => { location.href = a.href; }, 300);
     }));
-    $("#btn-filter").onclick = e => { e.stopPropagation(); toggleFilter(); };
-    $("#chips").addEventListener("click", e => { const b = e.target.closest("[data-quick]"); if (!b) return; state.quick = b.dataset.quick; syncChips(); renderConcerts(); });
-    $("#view-seg").addEventListener("change", e => { state.view = e.target.value; renderConcerts(); });
-    $("#theme-seg").addEventListener("change", e => { localStorage.setItem("fr-theme", e.target.value); applyTheme(); });
     document.addEventListener("click", e => {
       if (!e.target.closest("#menu") && !e.target.closest("#btn-menu")) $("#menu").hidden = true;
       if (!e.target.closest("#list-menu") && !e.target.closest("#btn-listswitch")) $("#list-menu").hidden = true;

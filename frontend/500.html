@@ -4,43 +4,66 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>500 · Frontrow</title>
-<!-- Standalone by design: no external CSS, fonts or icons, so this page renders even
-     when the app's assets don't. Tokens are copied from Nocturne. -->
+<!-- Zero external requests by design: no webfont, no stylesheet, no icon set. This page
+     has to render when the app or the network is down, so Signal's fallback register is
+     the system mono stack and a horizon drawn in pure CSS. -->
 <style>
-  :root{--bg:#161826;--surface:#232532;--text:#e9e9ed;--accent:#9184d9;--divider:rgba(233,233,237,.16);
-        --mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
-        --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  :root{
+    --bg:#0D1211;--surface:#141B19;--raise:#1B2422;--line:#243230;
+    --text:#E6F2EE;--dim:#93B2AA;--mute:#6E8C85;--accent:#46E39B;--ink:#04160F;--alert:#FF7A6B;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  }
   @media (prefers-color-scheme: light){
-    :root{--bg:#e8ebf7;--surface:#f7f8fe;--text:#292b31;--accent:#5d5294;--divider:rgba(41,43,49,.18)}
+    :root{--bg:#EDF2EF;--surface:#FFFFFF;--raise:#E3EBE7;--line:#D3DED9;
+          --text:#06201A;--dim:#4B6660;--mute:#6B807A;--accent:#046B4A;--ink:#F2FFFA;--alert:#B3261E}
   }
   *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:var(--body)}
-  .top{display:flex;align-items:center;gap:9px;padding:17px 22px}
-  .tick{width:3px;height:14px;background:var(--accent);border-radius:2px}
-  .brand{font-size:13px;letter-spacing:.22em;text-transform:uppercase;font-weight:500}
-  main{flex:1;display:grid;place-items:center;padding:22px 22px 56px}
-  .panel{width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px;align-items:flex-start;
-         padding:28px;border-radius:14px;background:var(--surface);box-shadow:0 0 0 1px var(--divider)}
-  .code{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--accent)}
-  h1{margin:0;font-size:27px;font-weight:500;line-height:1.15;letter-spacing:-.01em}
-  p{margin:0;font-size:15px;line-height:1.55;color:color-mix(in srgb,var(--text) 68%,transparent)}
-  .btn{display:inline-flex;align-items:center;gap:8px;margin-top:4px;padding:9px 15px;border-radius:8px;
-       border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);
-       font:inherit;font-size:14px;text-decoration:none}
-  .btn:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
-  footer{padding:0 22px 22px;font-size:12px;color:color-mix(in srgb,var(--text) 45%,transparent)}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;
+       background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;line-height:1.5}
+  .top{display:flex;align-items:center;gap:10px;padding:20px 24px}
+  .mark{font:700 17px/1 var(--mono);letter-spacing:-.02em}
+  .mark b{color:var(--accent)}
+  .lab{font:500 10px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+  main{flex:1;display:grid;place-items:center;padding:24px 24px 64px}
+  .card{width:100%;max-width:520px;padding:30px;border-radius:16px;background:var(--surface);
+        box-shadow:0 4px 16px rgb(0 0 0/.3);display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+  .code{font:500 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
+  h1{margin:0;font:600 25px/1.15 var(--mono);letter-spacing:-.02em}
+  p{margin:0;font-size:14.5px;color:var(--dim);max-width:44ch}
+  .btn{display:inline-flex;align-items:center;gap:8px;margin-top:4px;padding:11px 18px;border:0;border-radius:12px;
+       background:var(--accent);color:var(--ink);font:600 13px/1 var(--mono);cursor:pointer;text-decoration:none}
+  .btn:hover{filter:brightness(1.08)}
+  /* The horizon, in pure CSS: a ruled line with the "now" bar and a few dots. It is the
+     only ornament these pages get, and it needs nothing but a border and some spans. */
+  .horizon{width:100%;margin-top:6px;padding-top:16px;border-top:1px solid var(--line)}
+  .hline{position:relative;height:20px;border-bottom:2px solid var(--line)}
+  .hnow{position:absolute;left:0;bottom:0;width:2px;height:20px;border-radius:2px;background:var(--accent)}
+  .hdot{position:absolute;bottom:-4px;width:8px;height:8px;border-radius:999px;background:var(--accent);transform:translateX(-4px)}
+  .hdot.o{background:transparent;border:2px solid var(--mute)}
+  .hmonths{display:flex;justify-content:space-between;margin-bottom:8px}
+  footer{padding:0 24px 24px;font-size:11.5px;color:var(--mute)}
 </style>
 </head>
 <body>
-  <div class="top"><span class="tick"></span><span class="brand">Frontrow</span></div>
+  <div class="top"><span class="mark">frontrow<b>.</b></span></div>
   <main>
-    <div class="panel">
+    <div class="card">
       <span class="code">500</span>
-      <h1>Something broke backstage</h1>
-      <p>Frontrow hit an error on our side. Your list is safe — try again in a moment.</p>
-      <a class="btn" href="/">Try again</a>
+      <h1>Technical difficulties</h1>
+      <p>Something broke on our side — your lists are safe. Give it a minute and reload.</p>
+      <button class="btn" type="button" onclick="location.reload()">Reload</button>
+      <div class="horizon">
+        <div class="hmonths lab"><span>today</span><span>+2 mo</span><span>+4 mo</span><span>+6 mo</span></div>
+        <div class="hline">
+          <span class="hnow"></span>
+          <span class="hdot" style="left:14%"></span>
+          <span class="hdot o" style="left:31%"></span>
+          <span class="hdot" style="left:48%"></span>
+          <span class="hdot" style="left:72%"></span>
+        </div>
+      </div>
     </div>
   </main>
-  <footer>Frontrow — a small thing for friends who go to shows.</footer>
+  <footer>frontrow · a small thing for friends who go to shows</footer>
 </body>
 </html>

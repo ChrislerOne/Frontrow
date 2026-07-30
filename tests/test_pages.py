@@ -44,7 +44,7 @@ def test_offline_page_and_service_worker_are_reachable(client):
 
 def test_500_page_exists_and_names_no_internals(client):
     body = html.unescape((FRONTEND / "500.html").read_text())
-    assert "Something broke backstage" in body
+    assert "Technical difficulties" in body
     assert "Traceback" not in body
 
 
@@ -75,7 +75,7 @@ def test_landing_starts_the_oauth_flow_the_way_the_proxy_expects():
 def test_access_denied_branch_exists_and_publishes_no_contact_address():
     src = html.unescape((AUTH / "error.html").read_text())
     assert "{{if eq .StatusCode 403}}" in src
-    assert "This inbox isn't on the list" in src
+    assert "You're not on the list" in src
     assert "mailto:" not in src  # an address on a public page is a spam magnet
 
 
@@ -92,4 +92,4 @@ def test_standalone_pages_depend_on_no_external_assets():
     for page in ("404.html", "500.html", "offline.html", "auth/sign_in.html", "auth/error.html"):
         src = (FRONTEND / page).read_text()
         assert "unpkg.com" not in src and "fonts.googleapis" not in src, page
-        assert "nocturne.css" not in src, page
+        assert "signal.css" not in src, page  # must stay zero-request

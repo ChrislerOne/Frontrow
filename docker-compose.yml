@@ -54,7 +54,7 @@ services:
       # Public, unauthenticated read-only share pages (+ the CSS they need):
       - --skip-auth-route=^/s/
       - --skip-auth-route=^/api/shared/
-      - --skip-auth-route=^/nocturne.css
+      - --skip-auth-route=^/signal.css
     environment:
       # Set these in Coolify's Environment Variables (NOT committed):
       - OAUTH2_PROXY_CLIENT_ID=${OAUTH2_PROXY_CLIENT_ID}

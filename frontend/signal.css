@@ -1,0 +1,280 @@
+/* Frontrow — "Signal", the design system.
+ *
+ * Replaces Nocturne wholesale. Panels, not walls: content sits in floating rounded
+ * surfaces on a deeper ground, with soft ambient shadows. Density is the point — the
+ * concert list is 48px rows, not cards, so a dozen shows fit above the fold.
+ *
+ * Type has three jobs and never crosses them:
+ *   Space Grotesk — UI, headings, anything you read as language
+ *   IBM Plex Mono — data only: dates, times, prices, counts, state tags, status lines
+ *   Work Sans     — prose: hints, empty states, the human voice
+ */
+
+:root {
+  --bg: #0D1211;
+  --surface: #141B19;
+  --raise: #1B2422;
+  --line: #243230;
+  --line-strong: #33463F;
+
+  --text: #E6F2EE;
+  --text-dim: #93B2AA;
+  --text-mute: #6E8C85;
+
+  --accent: #46E39B;          /* the signal */
+  --accent-ink: #04160F;      /* text on accent */
+  --accent-soft: #0E2A21;
+
+  --held: #FFC24B;            /* a ticket you hold — the one warm colour */
+  --held-ink: #1B1300;
+  --held-soft: #2A2007;
+
+  --gone: #6E8C85;            /* sold out / no tickets: receded, not alarming */
+  --alert: #FF7A6B;           /* destructive, errors */
+  --new: #7FD9FF;             /* recently announced */
+  --focus: #46E39B;
+
+  --ui: "Space Grotesk", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --prose: "Work Sans", system-ui, sans-serif;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+
+  --sh-1: 0 1px 2px rgb(0 0 0 / .25);
+  --sh-2: 0 4px 16px rgb(0 0 0 / .3);
+  --sh-3: 0 12px 40px rgb(0 0 0 / .55);
+}
+
+[data-fr-theme="light"] {
+  --bg: #EDF2EF;
+  --surface: #FFFFFF;
+  --raise: #E3EBE7;
+  --line: #D3DED9;
+  --line-strong: #A9BDB6;
+
+  --text: #06201A;
+  --text-dim: #4B6660;
+  --text-mute: #6B807A;
+
+  --accent: #046B4A;
+  --accent-ink: #F2FFFA;
+  --accent-soft: #D7EFE4;
+
+  --held: #8A5A00;
+  --held-ink: #FFFBF2;
+  --held-soft: #F6E6C4;
+
+  --gone: #6B807A;
+  --alert: #B3261E;
+  --new: #0B6E99;
+  --focus: #046B4A;
+
+  --sh-1: 0 1px 2px rgb(6 32 26 / .07);
+  --sh-2: 0 4px 16px rgb(6 32 26 / .09);
+  --sh-3: 0 12px 40px rgb(6 32 26 / .18);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+h1, h2, h3, h4, h5, h6 { margin: 0; font-family: var(--ui); letter-spacing: -.01em; }
+
+/* ── type roles ──────────────────────────────────────────────────────────── */
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prose { font-family: var(--prose); }
+/* Small uppercase mono, used for section labels and state tags. */
+.label {
+  font: 500 10px/1 var(--mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.status { font: 400 11px/1 var(--mono); color: var(--text-mute); }
+
+/* ── wordmark ────────────────────────────────────────────────────────────── */
+.wordmark { font: 700 18px/1 var(--ui); letter-spacing: -.01em; color: var(--text); }
+.wordmark b { color: var(--accent); font-weight: 700; }
+
+/* ── panels ──────────────────────────────────────────────────────────────── */
+.panel { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--sh-2); }
+.panel-quiet { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 9px 16px; border: 0; border-radius: var(--r-md);
+  background: var(--raise); color: var(--text-dim);
+  font: 500 13px/1 var(--ui); cursor: pointer; text-decoration: none;
+  transition: background .14s ease, color .14s ease;
+}
+.btn:hover { background: var(--line); color: var(--text); text-decoration: none; }
+.btn:disabled { opacity: .45; cursor: default; }
+
+.btn-primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn-primary:hover { background: var(--accent); color: var(--accent-ink); filter: brightness(1.08); }
+
+.btn-ghost { background: transparent; color: var(--text-dim); }
+.btn-ghost:hover { background: var(--raise); color: var(--text); }
+
+.btn-danger { background: transparent; color: var(--alert); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--alert) 55%, transparent); }
+.btn-danger:hover { background: color-mix(in srgb, var(--alert) 14%, transparent); color: var(--alert); }
+
+.btn-held { background: var(--held); color: var(--held-ink); font-weight: 600; }
+.btn-held:hover { background: var(--held); color: var(--held-ink); filter: brightness(1.06); }
+
+.btn-pill { border-radius: var(--r-pill); }
+.btn-icon { padding: 0; width: 34px; height: 34px; border-radius: var(--r-pill); background: var(--surface); box-shadow: var(--sh-1); }
+.btn-icon:hover { background: var(--raise); }
+.btn-sm { padding: 6px 12px; font-size: 11.5px; }
+
+/* ── pills, segments, chips ──────────────────────────────────────────────── */
+.seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--surface); border-radius: var(--r-pill); box-shadow: var(--sh-1); }
+.seg-opt {
+  padding: 7px 16px; border: 0; border-radius: var(--r-pill); cursor: pointer;
+  background: transparent; color: var(--text-dim); font: 500 12px/1 var(--ui);
+}
+.seg-opt:hover { color: var(--text); }
+.seg-opt.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border: 0; border-radius: var(--r-pill);
+  background: transparent; color: var(--text-dim); font: 500 12px/1 var(--ui); cursor: pointer;
+}
+.chip:hover { background: var(--raise); color: var(--text); }
+.chip.on { background: var(--raise); color: var(--text); }
+.chip.on-accent { background: var(--accent); color: var(--accent-ink); font-weight: 600; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent); }
+.chip em { font: 400 11px/1 var(--mono); font-style: normal; color: var(--text-mute); }
+.chip.on em, .chip.on-accent em { color: inherit; opacity: .8; }
+
+/* ── state tags — mono, lowercase, quiet ─────────────────────────────────── */
+.tag { font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); }
+.tag.gone { color: var(--gone); }
+.tag.alert { color: var(--alert); }
+.tag.held { color: var(--held); }
+.tag.new { color: var(--new); }
+
+.role {
+  font: 500 9.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: var(--r-pill);
+  background: var(--surface); color: var(--text-dim);
+}
+.role.owner { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+
+/* ── monogram / avatar ───────────────────────────────────────────────────── */
+.mono-circle {
+  flex: none; display: grid; place-items: center; border-radius: var(--r-pill);
+  background: var(--raise); color: var(--accent);
+  font: 500 11px/1 var(--mono); overflow: hidden;
+}
+.mono-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── inputs ──────────────────────────────────────────────────────────────── */
+.input {
+  width: 100%; padding: 11px 14px; border: 0; border-radius: var(--r-md);
+  background: var(--surface); color: var(--text);
+  font: 400 14px/1.2 var(--ui); box-shadow: var(--sh-1);
+}
+.input::placeholder { color: var(--text-mute); }
+.input:focus { outline: 2px solid var(--focus); outline-offset: 0; }
+select.input { cursor: pointer; }
+
+/* ── the concert row — Signal's workhorse ────────────────────────────────── */
+.row {
+  display: grid;
+  /* Date and action tracks are sized to their content at 13px mono / 11.5px pills —
+     anything tighter and both wrap to two lines, which breaks the 48px rhythm. */
+  grid-template-columns: 14px 148px minmax(0, 1.4fr) minmax(0, 1fr) 78px 86px auto;
+  align-items: center; gap: 12px;
+  padding: 0 20px; min-height: 48px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.row:hover { background: color-mix(in srgb, var(--text) 3%, transparent); }
+.row .r-date { font: 500 13px/1 var(--mono); color: var(--text); white-space: nowrap; }
+.row .r-title { font: 500 15px/1.2 var(--ui); color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r-place { font: 400 13px/1.2 var(--ui); color: var(--text-dim); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r-price { font: 400 13px/1 var(--mono); color: var(--text-dim); text-align: right; }
+.row .r-tag { text-align: right; }
+.row .r-act { display: flex; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+/* Receded: sold out, cancelled, no tickets. Dimmed, never struck through. */
+.row.is-gone .r-date, .row.is-gone .r-title { color: var(--text-dim); }
+/* The new marker: a hanging bar in the gutter, not a badge. */
+.row .r-new { width: 4px; height: 22px; border-radius: var(--r-pill); background: var(--new); }
+
+/* ── the horizon — Signal's signature ────────────────────────────────────── */
+.horizon-months { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.horizon-line { position: relative; height: 24px; border-bottom: 2px solid var(--line); }
+.horizon-now { position: absolute; left: 0; bottom: 0; width: 2px; height: 24px; border-radius: 2px; background: var(--accent); }
+.horizon-dot { position: absolute; bottom: -4px; width: 8px; height: 8px; border-radius: var(--r-pill); background: var(--accent); transform: translateX(-4px); }
+.horizon-dot.is-new { box-shadow: 0 0 0 4px color-mix(in srgb, var(--new) 28%, transparent); }
+.horizon-dot.is-held { background: var(--held); }
+.horizon-dot.is-gone { background: transparent; border: 2px solid var(--gone); }
+
+/* ── popovers, dialogs, toasts ───────────────────────────────────────────── */
+.pop {
+  position: absolute; z-index: 45;
+  background: var(--raise); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--sh-3); padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.menu {
+  position: absolute; z-index: 45;
+  background: var(--raise); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--sh-3); padding: 10px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; border: 0; border-radius: 10px; cursor: pointer;
+  background: transparent; color: var(--text-dim); font: 500 13px/1.2 var(--ui); text-align: left;
+}
+.menu-item:hover { background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text); text-decoration: none; }
+.menu-item.on { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); }
+.menu-item.danger { color: var(--alert); }
+
+.backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 22px; background: rgb(0 0 0 / .55); backdrop-filter: blur(2px); }
+.dialog { width: min(560px, 100%); max-height: 86vh; overflow: auto; padding: 22px; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--sh-3); display: flex; flex-direction: column; gap: 16px; }
+.dialog-title { font: 600 19px/1.2 var(--ui); }
+.dialog-body { font: 400 14px/1.5 var(--prose); color: var(--text-dim); }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+.toast {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 12px 14px; border-radius: var(--r-md);
+  background: var(--raise); box-shadow: var(--sh-3);
+  font: 500 13px/1.3 var(--ui); color: var(--text);
+}
+.toast > span { flex: 1; }
+
+/* ── empty states ────────────────────────────────────────────────────────── */
+.empty { display: flex; flex-direction: column; gap: 9px; align-items: flex-start; padding: 34px 24px; }
+.empty h4 { font: 600 17px/1.2 var(--ui); }
+.empty p { margin: 0; font: 400 14px/1.5 var(--prose); color: var(--text-dim); max-width: 46ch; }
+
+.hr { height: 1px; border: 0; background: var(--line); margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001s !important; animation-iteration-count: 1 !important;
+    transition-duration: .001s !important;
+  }
+}

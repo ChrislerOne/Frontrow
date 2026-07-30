@@ -1,114 +1,154 @@
 <!DOCTYPE html>
-<html lang="en" data-fr-theme="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Frontrow · Shared list</title>
-  <link rel="stylesheet" href="/nocturne.css" />
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <title>Frontrow · shared list</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Work+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/signal.css" />
   <style>
-    :root { --fr-mono: ui-monospace, "SFMono-Regular", Menlo, monospace; --fr-danger:#d4736a; }
-    [data-fr-theme="light"]{ --color-bg:#e8ebf7; --color-surface:#f7f8fe; --color-text:#292b31; --color-accent:#5d5294; --color-divider: color-mix(in srgb, #292b31 18%, transparent); --shadow-sm: 0 0 0 1px #cfd3e5; --fr-danger:#9c4038; }
-    body{margin:0;min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}
-    .hero{padding:22.4px 16.8px;background:radial-gradient(100% 120% at 12% -30%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 60%)}
-    .wrap{max-width:960px;margin:0 auto}
-    .brandrow{display:flex;align-items:center;gap:8.4px}
-    .tick{width:3px;height:13px;background:var(--color-accent);border-radius:2px}
-    .brand{font-family:var(--font-heading);font-size:13px;letter-spacing:.22em;text-transform:uppercase}
-    .grid{display:grid;gap:11.2px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
-    .card{position:relative;overflow:hidden;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
-    .card.out{background:color-mix(in srgb, var(--color-surface) 62%, var(--color-bg))}
-    .card.out .title{color:color-mix(in srgb, var(--color-text) 58%, transparent)}
-    .noart{display:grid;place-items:center;background:var(--color-accent-800);color:var(--color-accent-100);font-size:12px}
-    .avail{font-family:var(--fr-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 6px;border-radius:4px;color:var(--fr-danger);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--fr-danger) 55%, transparent)}
-    .cmain{padding:16.8px 16.8px 11.2px;display:flex;flex-direction:column;gap:5.6px;flex:1}
-    .kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent)}
-    .title{font-family:var(--font-heading);font-weight:500;font-size:17px;line-height:1.2;text-wrap:pretty}
-    .perf{position:relative;height:1px;background:repeating-linear-gradient(to right, var(--color-divider) 0 5px, transparent 5px 11px)}
-    .perf::before,.perf::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--color-bg)}
-    .perf::before{left:-7px}.perf::after{right:-7px}
-    .stub{padding:12.6px 16.8px 14px;display:flex;align-items:center;gap:11.2px;flex-wrap:wrap}
-    .meta{flex:1 1 150px;display:flex;flex-direction:column;gap:3px;font-family:var(--fr-mono);font-size:11.5px;letter-spacing:.04em;min-width:0}
-    .place{color:color-mix(in srgb, var(--color-text) 55%, transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .empty{display:flex;flex-direction:column;gap:8.4px;align-items:flex-start;padding:33.6px 22.4px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)}
-    .empty > i{font-size:24px;color:var(--color-accent)}
-    .cta{display:flex;flex-wrap:wrap;align-items:center;gap:11.2px;padding:16.8px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);margin-top:16.8px}
+    .wrap{width:100%;max-width:980px;margin:0 auto;padding:0 24px 40px}
+    .hero{padding:26px 0 22px}
+    .brandrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .note{margin:14px 0 0;padding-left:14px;border-left:2px solid var(--accent);
+          font:400 16px/1.5 var(--prose);color:var(--text)}
+    .note cite{display:block;margin-top:5px;font:400 11px/1 var(--mono);font-style:normal;color:var(--text-mute)}
+    .cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:20px;padding:18px 20px}
+    @media (max-width:960px){
+      .row{grid-template-columns:14px minmax(0,1fr) auto;
+           grid-template-areas:"n title price" "n meta tag";row-gap:3px;padding:11px 14px}
+      .row .r-new{grid-area:n} .row .r-date{grid-area:meta;font-size:11.5px;color:var(--text-dim)}
+      .row .r-title{grid-area:title} .row .r-place{grid-area:meta;justify-self:end;font-size:11.5px}
+      .row .r-price{grid-area:price} .row .r-tag{grid-area:tag;justify-self:end} .row .r-act{display:none}
+    }
   </style>
 </head>
 <body>
-  <div class="hero"><div class="wrap" style="display:flex;flex-direction:column;gap:8.4px">
-    <div class="brandrow"><span class="tick"></span><span class="brand">Frontrow</span><span class="tag tag-outline" style="margin-left:auto">Read-only</span></div>
-    <h3 id="heading" style="margin:0">Loading…</h3>
-    <span class="text-muted" id="subhead" style="font-size:14px"></span>
-    <blockquote id="note" hidden style="margin:5.6px 0 0;padding-left:11.2px;border-left:2px solid var(--color-accent);font-size:15px;line-height:1.5"></blockquote>
-  </div></div>
-  <div class="wrap" style="padding:16.8px 16.8px 33.6px">
-    <div id="content"></div>
-    <div class="cta">
-      <div style="display:flex;flex-direction:column;gap:2px;flex:1 1 240px">
-        <span style="font-family:var(--font-heading);font-size:15px">Want your own list?</span>
-        <span class="text-muted" style="font-size:13px">Frontrow is invite-only — but this is what it looks like.</span>
+  <div class="wrap">
+    <div class="hero">
+      <div class="brandrow">
+        <span class="wordmark">frontrow<b>.</b></span>
+        <span class="label">shared list</span>
+        <span class="role" style="margin-left:auto">read-only</span>
       </div>
-      <a class="btn btn-primary" href="/">See Frontrow <i class="ph ph-arrow-square-out"></i></a>
+      <h1 id="heading" style="margin:18px 0 6px;font:700 30px/1.15 var(--ui)">Loading…</h1>
+      <span class="status" id="subhead"></span>
+      <blockquote class="note" id="note" hidden></blockquote>
+    </div>
+
+    <div id="content"></div>
+
+    <div class="cta panel" id="cta" hidden>
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1 1 240px">
+        <span style="font:600 15px/1.3 var(--ui)">Like keeping a list like this?</span>
+        <span class="prose" style="font-size:13px;color:var(--text-dim)">Frontrow is invite-only — but this is what it looks like.</span>
+      </div>
+      <a class="btn btn-primary" href="/">Get your own Frontrow ↗</a>
     </div>
   </div>
 
   <script>
-    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    "use strict";
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     const safeUrl = u => (typeof u === "string" && /^https?:\/\//i.test(u)) ? u : null;
-    const WD=["SO","MO","DI","MI","DO","FR","SA"], MO=["JAN","FEB","MRZ","APR","MAI","JUN","JUL","AUG","SEP","OKT","NOV","DEZ"];
-    const dateLine = iso => { if(!iso) return "DATE TBA"; const d=new Date(iso); if(isNaN(d)) return "DATE TBA"; const p=n=>String(n).padStart(2,"0"); return `${WD[d.getDay()]} · ${d.getDate()} ${MO[d.getMonth()]} ${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`; };
-    const place = e => [e.venue, e.city].filter(Boolean).join(" · ").toUpperCase() || "VENUE TBA";
-    (function theme(){ const s=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"; document.documentElement.dataset.frTheme=s; })();
+    const WD = ["SO","MO","DI","MI","DO","FR","SA"];
+    const MO = ["JAN","FEB","MRZ","APR","MAI","JUN","JUL","AUG","SEP","OKT","NOV","DEZ"];
+    const pad = n => String(n).padStart(2, "0");
+    const dateLine = iso => {
+      if (!iso) return "DATE TBA";
+      const d = new Date(iso); if (isNaN(d)) return "DATE TBA";
+      return `${WD[d.getDay()]} ${pad(d.getDate())} ${MO[d.getMonth()]} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    const placeLine = e => [e.venue, e.city].filter(Boolean).join(" · ") || "Venue TBA";
+    const AVAIL = {
+      sold_out:    { label: "sold out",   tone: "gone" },
+      cancelled:   { label: "cancelled",  tone: "alert" },
+      unavailable: { label: "no tickets", tone: "gone" },
+    };
+    const money = e => e.price == null ? null : new Intl.NumberFormat(undefined,
+      { style: "currency", currency: e.currency || "EUR" }).format(e.price);
+    const monogram = (name, image, size) => {
+      const u = safeUrl(image);
+      const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * .34)}px`;
+      if (u) return `<span class="mono-circle" style="${style}"><img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></span>`;
+      const ini = (name || "?").replace(/[^A-Za-z0-9 ]/g, "").split(/\s+/).filter(Boolean)
+        .slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+      return `<span class="mono-circle" style="${style}">${esc(ini)}</span>`;
+    };
+
+    (function theme() {
+      document.documentElement.dataset.frTheme =
+        matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    })();
+
+    function rowHTML(e) {
+      const av = AVAIL[e.availability], link = safeUrl(e.link), price = money(e);
+      return `<div class="row${av ? " is-gone" : ""}">
+        ${e.attending ? `<span class="r-new" style="background:var(--held)" title="Ticket bought"></span>` : `<span></span>`}
+        <span class="r-date">${esc(dateLine(e.start_date))}</span>
+        <span class="r-title" title="${esc(e.name || e.artist)}">${esc(e.name || e.artist)}</span>
+        <span class="r-place" title="${esc(placeLine(e))}">${esc(placeLine(e))}</span>
+        <span class="r-price">${price ? esc(price) : ""}</span>
+        <span class="r-tag"><span class="tag ${av ? av.tone : ""}">${av ? esc(av.label) : "available"}</span></span>
+        <span class="r-act">${link
+          ? `<a class="btn btn-ghost btn-pill btn-sm" href="${esc(link)}" target="_blank" rel="noopener">${av ? "Event page" : "Tickets"} ↗</a>`
+          : ""}</span>
+      </div>`;
+    }
+
+    function groupHTML(artist, events, image) {
+      return `<div class="panel group" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 20px">
+          ${monogram(artist, image, 38)}
+          <span class="g-name" style="font:700 21px/1 var(--ui)">${esc(artist)}</span>
+          <span class="g-sum" style="font:400 11px/1 var(--mono);color:var(--text-dim)">${events.length} show${events.length === 1 ? "" : "s"}</span>
+        </div>
+        ${events.map(rowHTML).join("")}
+      </div>`;
+    }
+
+    function state(h, sub) {
+      return `<div class="panel empty"><h4>${esc(h)}</h4><p>${esc(sub)}</p></div>`;
+    }
 
     const token = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
-
-    const AVAIL = { sold_out: "Sold out", cancelled: "Cancelled", unavailable: "No tickets" };
-    const avatar = (image, size = 24) => {
-      const box = `width:${size}px;height:${size}px;border-radius:50%;flex:none`;
-      const u = safeUrl(image);
-      return u ? `<img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="${box};object-fit:cover" />`
-               : `<span class="noart" style="${box}"><i class="ph ph-music-notes"></i></span>`;
-    };
-    const money = e => e.price == null ? null : new Intl.NumberFormat(undefined, { style: "currency", currency: e.currency || "EUR" }).format(e.price);
-
-    function card(e) {
-      const link = safeUrl(e.link);
-      const av = AVAIL[e.availability];
-      const from = money(e);
-      const ticket = !link ? `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`
-        : av ? `<a class="btn btn-secondary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-arrow-square-out"></i> Event page</a>`
-        : `<a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-ticket"></i> Tickets</a>`;
-      return `<article class="card${av ? " out" : ""}"><div class="cmain">
-          <div style="display:flex;align-items:center;gap:8.4px">${avatar(e.artist_image)}<span class="kicker">${esc(e.artist)}</span>${av ? `<span class="avail" style="margin-left:auto">${esc(av)}</span>` : ""}</div>
-          <span class="title">${esc(e.name || e.artist)}</span></div>
-        <div class="perf"></div><div class="stub"><div class="meta"><span>${esc(dateLine(e.start_date))}</span><span class="place">${esc(place(e))}</span>${from ? `<span style="color:var(--color-accent)">FROM ${esc(from)}</span>` : ""}</div>${ticket}</div></article>`;
-    }
-    function emptyState(icon, h, sub) {
-      return `<div class="empty"><i class="ph ${icon}"></i><span style="font-family:var(--font-heading);font-size:18px">${esc(h)}</span><span class="text-muted" style="font-size:14px">${esc(sub)}</span></div>`;
-    }
 
     fetch("/api/shared/" + encodeURIComponent(token)).then(r => {
       if (!r.ok) throw new Error(r.status);
       return r.json();
     }).then(data => {
-      document.getElementById("heading").textContent = `${data.owner_name} is going to these`;
+      document.getElementById("heading").textContent = `${data.owner_name} is watching these shows`;
+      document.getElementById("subhead").textContent = data.concerts.length
+        ? `${data.concerts.length} upcoming · updated automatically · ${data.list_name}`
+        : data.list_name;
       if (data.note) {
         const q = document.getElementById("note");
-        q.textContent = `“${data.note}”`;   // textContent, not innerHTML — public page, untrusted input
+        // textContent, not innerHTML — this is an unauthenticated page.
+        q.textContent = `“${data.note}”`;
+        const cite = document.createElement("cite");
+        cite.textContent = `— ${data.owner_name}`;
+        q.appendChild(cite);
         q.hidden = false;
       }
-      document.getElementById("subhead").textContent = data.concerts.length
-        ? `${data.concerts.length} upcoming show${data.concerts.length===1?"":"s"} · ${esc(data.list_name)}`
-        : esc(data.list_name);
-      const c = document.getElementById("content");
-      c.innerHTML = data.concerts.length
-        ? `<div class="grid">${data.concerts.map(card).join("")}</div>`
-        : emptyState("ph-ticket", "Nothing on this list yet", "Check back — this page updates itself.");
+      const byArtist = new Map();
+      for (const e of data.concerts) {
+        if (!byArtist.has(e.artist)) byArtist.set(e.artist, []);
+        byArtist.get(e.artist).push(e);
+      }
+      document.getElementById("content").innerHTML = data.concerts.length
+        ? [...byArtist.entries()].map(([a, evs]) => groupHTML(a, evs, evs[0].artist_image)).join("")
+        : state("Nothing here yet", `${data.owner_name}'s list is empty right now — check back after the next show drop.`);
+      document.getElementById("cta").hidden = false;
     }).catch(() => {
-      document.getElementById("heading").textContent = "This link isn't live anymore";
+      document.getElementById("heading").textContent = "This link was revoked";
       document.getElementById("subhead").textContent = "";
-      document.getElementById("content").innerHTML = emptyState("ph-link-break", "Link revoked or expired", "Whoever shared it has turned the link off. Ask them for a fresh one.");
+      document.getElementById("content").innerHTML =
+        state("Nothing to see here", "The person who shared it turned it off. Ask them for a fresh one.");
+      document.getElementById("cta").hidden = false;
     });
   </script>
 </body>
