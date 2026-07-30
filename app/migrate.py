@@ -25,6 +25,8 @@ NEW_COLUMNS: dict[str, dict[str, str]] = {
         "price": "FLOAT",
         "currency": "VARCHAR",
         "last_checked_at": "DATETIME",
+        "latitude": "FLOAT",
+        "longitude": "FLOAT",
     },
 }
 

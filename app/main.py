@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from .auth import current_user, require_edit, require_owner, require_view, role_of
 from .database import Base, engine, get_db
+from .geocode import backfill_event_coords, city_point
 from .artist_search import deezer_search, ensure_artist_image
 from .migrate import ensure_columns
 from .models import (
@@ -111,6 +112,8 @@ def _event_dict(e: Event, is_new: bool, attending: bool = False) -> dict:
         "city": e.city,
         "venue": e.venue,
         "link": e.link,
+        "lat": e.latitude,
+        "lon": e.longitude,
         "is_new": is_new,
         "attending": attending,
         "availability": _availability(e),
@@ -188,9 +191,22 @@ def _artist_or_create(db: Session, name: str) -> Artist:
 
 
 # ── identity ─────────────────────────────────────────────────────────────────
+def _me_dict(db: Session, user: User, *, resolve: bool = False) -> dict:
+    """`home` is the radius filter's origin: the default city geocoded once and cached.
+    Reads stay cache-only (resolve=False) so /api/me can't block on the geocoder; the
+    one network lookup happens when the city is saved."""
+    point = city_point(db, user.default_city, resolve=resolve) if user.default_city else None
+    return {
+        "email": user.email,
+        "name": user.name,
+        "default_city": user.default_city,
+        "home": {"city": user.default_city, "lat": point[0], "lon": point[1]} if point else None,
+    }
+
+
 @app.get("/api/me")
-def me(user: User = Depends(current_user)):
-    return {"email": user.email, "name": user.name, "default_city": user.default_city}
+def me(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return _me_dict(db, user)
 
 
 @app.patch("/api/me")
@@ -198,7 +214,7 @@ def update_me(payload: PrefsIn, user: User = Depends(current_user), db: Session 
     city = (payload.default_city or "").strip()
     user.default_city = city or None
     db.commit()
-    return {"email": user.email, "name": user.name, "default_city": user.default_city}
+    return _me_dict(db, user, resolve=True)
 
 
 # ── lists ────────────────────────────────────────────────────────────────────
@@ -528,7 +544,9 @@ def artist_search(q: str = "", limit: int = 8, user: User = Depends(current_user
 
 @app.post("/api/scrape")
 def trigger_scrape(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    return scrape_all(db)
+    found = scrape_all(db)
+    backfill_event_coords(db)  # only touches events Eventim gave no coordinates for
+    return found
 
 
 # Public read-only share page (must be added to oauth2-proxy --skip-auth-route).

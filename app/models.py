@@ -66,6 +66,11 @@ class Event(Base):
     currency: Mapped[str | None] = mapped_column(String, nullable=True)
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    # Venue position. Eventim supplies this for ~97% of products; the rest are filled in
+    # once from the Place cache and then left alone.
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     artist: Mapped["Artist"] = relationship(back_populates="events")
 
 
@@ -180,6 +185,24 @@ class ArtistSuggestion(Base):
     image: Mapped[str | None] = mapped_column(String, nullable=True)
     source: Mapped[str] = mapped_column(String, default="deezer")
     added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Place(Base):
+    """Permanent cache of anything we've had to geocode: venues Eventim gave no
+    coordinates for, and the home city a user picks. Venues and cities don't move, so a
+    resolved row is never looked up again — which is also what Nominatim's usage policy
+    demands. A row with NULL coordinates is a negative result, kept deliberately so a
+    place that can't be found isn't retried on every scrape."""
+
+    __tablename__ = "places"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    query: Mapped[str] = mapped_column(String, unique=True, index=True)
+    label: Mapped[str | None] = mapped_column(String, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source: Mapped[str] = mapped_column(String, default="nominatim")
+    resolved_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class EventAttending(Base):

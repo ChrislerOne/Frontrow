@@ -116,8 +116,10 @@ class EventimAdapter:
             return None  # non-concert product (e.g. merch, package)
 
         location = live.get("location") or {}
+        geo = location.get("geoLocation") or {}
         # Eventim reports status as Available / SoldOut / Cancelled, and only carries
-        # `price` (the "ab X €" figure) while tickets are actually in stock.
+        # `price` (the "ab X €" figure) while tickets are actually in stock. geoLocation
+        # is present on ~97% of products; the rest get geocoded once from venue + city.
         return ConcertResult(
             product_id=str(product["productId"]),
             name=product.get("name", ""),
@@ -129,4 +131,6 @@ class EventimAdapter:
             in_stock=product.get("inStock"),
             price=product.get("price"),
             currency=product.get("currency"),
+            latitude=geo.get("latitude"),
+            longitude=geo.get("longitude"),
         )

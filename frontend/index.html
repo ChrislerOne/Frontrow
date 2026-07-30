@@ -105,6 +105,26 @@
     .fr-cal-ev.out{text-decoration:line-through;text-decoration-color:var(--fr-danger);color:color-mix(in srgb,var(--color-text) 50%,transparent)}
     .fr-cal-tba{display:flex;align-items:center;gap:8.4px;flex-wrap:wrap;margin-top:11.2px}
     @media(max-width:560px){.fr-cal-cell{min-height:62px}.fr-cal-ev{font-size:10px;padding:1px 4px}}
+    /* Leaflet is loaded on demand; these only style our own bits on top of it. */
+    .fr-map{height:min(64vh,560px);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm);background:var(--color-surface)}
+    .fr-map .leaflet-container{background:var(--color-surface);font-family:var(--font-body)}
+    /* OSM only ships a light tile style, so dark mode inverts the tiles themselves.
+       Applied to the tile images only — markers and popups keep their real colours. */
+    html:not([data-fr-theme="light"]) .fr-map .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.88) contrast(.9) saturate(.32)}
+    .fr-map .leaflet-popup-content-wrapper,.fr-map .leaflet-popup-tip{background:var(--color-surface);color:var(--color-text);box-shadow:var(--shadow-md)}
+    .fr-map .leaflet-popup-content-wrapper{border-radius:10px}
+    .fr-map .leaflet-popup-content a{color:var(--color-accent)}
+    .fr-map .leaflet-bar a{background:var(--color-surface);color:var(--color-text);border-bottom-color:var(--color-divider)}
+    .fr-map .leaflet-bar a:hover{background:var(--color-neutral-800)}
+    .fr-map .leaflet-control-attribution{background:color-mix(in srgb,var(--color-surface) 86%,transparent);color:color-mix(in srgb,var(--color-text) 62%,transparent)}
+    .fr-map .leaflet-control-attribution a{color:var(--color-accent)}
+    .fr-pin{display:grid;place-items:center;width:26px;height:26px;border-radius:50% 50% 50% 2px;transform:rotate(-45deg);
+            background:var(--color-neutral-700);box-shadow:0 0 0 1.5px var(--color-neutral-500);color:var(--color-neutral-100)}
+    .fr-pin i{transform:rotate(45deg);font-size:13px}
+    .fr-pin.att{background:var(--color-accent);box-shadow:0 0 0 1.5px var(--color-accent-200);color:#fff}
+    .fr-pin.out{background:var(--color-neutral-800);color:color-mix(in srgb,var(--fr-danger) 80%,transparent);box-shadow:0 0 0 1.5px var(--fr-danger)}
+    .fr-mappop{font-size:13px;display:flex;flex-direction:column;gap:3px}
+    .fr-maphint{display:flex;align-items:center;gap:8.4px;flex-wrap:wrap;margin-top:8.4px;font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)}
     .fr-perf{position:relative;height:1px;background:repeating-linear-gradient(to right, var(--color-divider) 0 5px, transparent 5px 11px)}
     .fr-perf::before,.fr-perf::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--color-bg)}
     .fr-perf::before{left:-7px}.fr-perf::after{right:-7px}
@@ -215,6 +235,7 @@
             <div class="seg" id="view-seg" style="flex:none">
               <label class="seg-opt"><input type="radio" name="fr-view" value="list" checked /><i class="ph ph-rows"></i><span>List</span></label>
               <label class="seg-opt"><input type="radio" name="fr-view" value="calendar" /><i class="ph ph-calendar-blank"></i><span>Calendar</span></label>
+              <label class="seg-opt"><input type="radio" name="fr-view" value="map" /><i class="ph ph-map-trifold"></i><span>Map</span></label>
             </div>
             <button class="btn btn-ghost" id="btn-refresh-2"><i class="ph ph-arrows-clockwise"></i> Refresh now</button>
           </div>
@@ -328,7 +349,8 @@
     const state = {
       me: null, lists: [], currentId: null, detail: null,
       events: [], quick: "all", view: "list", calMonth: null, cityFilter: new Set(), loading: true,
-      defaultCityApplied: false,
+      defaultCityApplied: false, radiusKm: 0, geoPoint: null, filterTab: "cities",
+      map: null, mapLayer: null,
     };
     const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -557,7 +579,12 @@
       box.querySelectorAll(".fr-rm").forEach(b => b.onclick = () => removeArtist(+b.dataset.id, b.dataset.name));
     }
 
-    const cityFiltered = () => state.cityFilter.size ? state.events.filter(e => e.city && state.cityFilter.has(e.city)) : state.events;
+    const cityFiltered = () => {
+      const byCity = state.cityFilter.size
+        ? state.events.filter(e => e.city && state.cityFilter.has(e.city))
+        : state.events;
+      return byCity.filter(withinRadius);
+    };
     const QUICK = {
       new: e => e.is_new,
       attending: e => e.attending,
@@ -586,12 +613,17 @@
       const list = quickFiltered();
       if (!list.length) {
         const msg = { attending: "You haven't marked a ticket as bought yet.", new: "Nothing new right now.",
-                      soldout: "Nothing on this list is sold out. Good." }[state.quick] || "Try a different city.";
+                      soldout: "Nothing on this list is sold out. Good." }[state.quick]
+                    || (state.radiusKm ? `Nothing within ${state.radiusKm} km — try a wider radius.` : "Try a different city.");
         box.innerHTML = `<div class="fr-empty"><i class="ph ph-funnel"></i><span class="h">No shows match this filter</span><span class="text-muted" style="font-size:14px">${msg}</span><button class="btn btn-primary" id="empty-clear"><i class="ph ph-x"></i> Show all</button></div>`;
-        $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.quick = "all"; syncChips(); renderConcerts(); renderFilterButton(); }; return;
+        $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.radiusKm = 0; state.quick = "all"; syncChips(); renderConcerts(); renderFilterButton(); }; return;
       }
 
+      // Leaflet holds a reference to its container, so tear it down before any other
+      // view overwrites that div.
+      if (state.view !== "map" && state.map) { state.map.remove(); state.map = null; state.mapLayer = null; }
       if (state.view === "calendar") { renderCalendar(box, list); return; }
+      if (state.view === "map") { renderMap(box, list); return; }
 
       // group by artist, sorted by each artist's next show
       const groups = new Map();
@@ -632,6 +664,121 @@
         renderConcerts();
       });
       box.querySelectorAll("[data-attend]").forEach(b => b.onclick = () => toggleAttend(b.dataset.attend, b.dataset.on !== "1"));
+    }
+
+    // ── map (OpenStreetMap via Leaflet, loaded on first use) ───
+    const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    let leafletPromise = null;
+    function ensureLeaflet() {
+      if (leafletPromise) return leafletPromise;
+      leafletPromise = new Promise((resolve, reject) => {
+        const link = document.createElement("link");
+        link.rel = "stylesheet"; link.href = LEAFLET_CSS;
+        document.head.appendChild(link);
+        const s = document.createElement("script");
+        s.src = LEAFLET_JS; s.onload = resolve; s.onerror = () => reject(new Error("leaflet"));
+        document.head.appendChild(s);
+      });
+      return leafletPromise;
+    }
+
+    function pinHTML(e) {
+      const cls = e.attending ? "att" : (AVAIL[e.availability] ? "out" : "");
+      const icon = e.attending ? "ph-ticket" : (AVAIL[e.availability] ? "ph-prohibit" : "ph-music-notes");
+      return `<span class="fr-pin ${cls}"><i class="ph ${icon}"></i></span>`;
+    }
+
+    function renderMap(box, list) {
+      const located = list.filter(e => typeof e.lat === "number" && typeof e.lon === "number");
+      const missing = list.length - located.length;
+      if (!box.querySelector("#fr-map")) {
+        box.innerHTML = `<div class="fr-map" id="fr-map"></div>
+          <div class="fr-maphint" id="fr-maphint"></div>`;
+      }
+      $("#fr-maphint").textContent = missing
+        ? `${located.length} of ${list.length} shows placed — ${missing} venue${missing === 1 ? "" : "s"} not located yet.`
+        : `${located.length} show${located.length === 1 ? "" : "s"} on the map.`;
+
+      ensureLeaflet().then(() => {
+        if (!state.map) {
+          state.map = L.map("fr-map", { scrollWheelZoom: false }).setView([51.2, 10.4], 5.4);
+          // Attribution is required by the OSM tile policy and must stay visible.
+          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          }).addTo(state.map);
+          state.mapLayer = L.layerGroup().addTo(state.map);
+        }
+        state.mapLayer.clearLayers();
+
+        const home = homePoint();
+        if (home) {
+          L.circleMarker([home.lat, home.lon], { radius: 6, color: "var(--color-accent)", fillOpacity: .9 })
+            .bindPopup(`Home · ${esc(home.city || "your location")}`).addTo(state.mapLayer);
+          if (state.radiusKm) {
+            L.circle([home.lat, home.lon], { radius: state.radiusKm * 1000, color: "var(--color-accent)",
+              weight: 1, fillOpacity: .06 }).addTo(state.mapLayer);
+          }
+        }
+
+        for (const e of located) {
+          const marker = L.marker([e.lat, e.lon], {
+            icon: L.divIcon({ html: pinHTML(e), className: "", iconSize: [26, 26], iconAnchor: [13, 24] }),
+            title: `${e.artist} — ${placeLine(e)}`,
+          });
+          const link = safeUrl(e.link);
+          const price = money(e);
+          const av = AVAIL[e.availability];
+          marker.bindPopup(`<div class="fr-mappop">
+            <b>${esc(e.artist)}</b>
+            <span>${esc(dateLine(e.start_date))}</span>
+            <span>${esc(placeLine(e))}</span>
+            ${price ? `<span>from ${esc(price)}</span>` : ""}
+            ${av ? `<span style="color:var(--fr-danger)">${esc(av.label)}</span>` : ""}
+            ${e.attending ? `<span style="color:var(--color-accent)">Ticket bought</span>` : ""}
+            ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">Open on Eventim</a>` : ""}
+          </div>`);
+          marker.addTo(state.mapLayer);
+        }
+
+        const pts = located.map(e => [e.lat, e.lon]);
+        if (home) pts.push([home.lat, home.lon]);
+        if (pts.length > 1) state.map.fitBounds(pts, { padding: [30, 30], maxZoom: 11 });
+        else if (pts.length === 1) state.map.setView(pts[0], 10);
+        state.map.invalidateSize();
+      }).catch(() => {
+        box.innerHTML = `<div class="fr-empty"><i class="ph ph-wifi-slash"></i><span class="h">Couldn't load the map</span><span class="text-muted" style="font-size:14px">The map library didn't load. The list and calendar still work.</span></div>`;
+      });
+    }
+
+    // ── radius ─────────────────────────────────────────────────
+    // Origin is whichever the user picked: their browser location this session, or the
+    // default city from Profile (geocoded server-side and cached).
+    const homePoint = () => state.geoPoint || (state.me && state.me.home) || null;
+    const RADIUS_PRESETS = [25, 50, 100, 200];
+    function distanceKm(a, b) {
+      const R = 6371, rad = d => d * Math.PI / 180;
+      const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
+    function withinRadius(e) {
+      const home = homePoint();
+      if (!state.radiusKm || !home) return true;
+      if (typeof e.lat !== "number" || typeof e.lon !== "number") return false;
+      return distanceKm(home, { lat: e.lat, lon: e.lon }) <= state.radiusKm;
+    }
+    function useMyLocation() {
+      if (!navigator.geolocation) { toast("This browser won't share a location.", "ph-warning", "var(--fr-danger)"); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          state.geoPoint = { lat: pos.coords.latitude, lon: pos.coords.longitude, city: "your location" };
+          if (!state.radiusKm) state.radiusKm = 50;
+          renderFilterPop(); renderConcerts(); renderFilterButton();
+          toast("Using your current location", "ph-crosshair", "var(--color-accent)");
+        },
+        () => toast("Couldn't get your location.", "ph-warning", "var(--fr-danger)")
+      );
     }
 
     function renderCalendar(box, list) {
@@ -730,25 +877,69 @@
 
     function renderFilterButton() {
       const n = state.cityFilter.size;
-      $("#filter-label").textContent = n === 0 ? "All cities" : n === 1 ? [...state.cityFilter][0] : `${n} cities`;
+      const home = homePoint();
+      const label = state.radiusKm && home
+        ? `${state.radiusKm} km · ${home.city || "you"}`
+        : n === 0 ? "All cities" : n === 1 ? [...state.cityFilter][0] : `${n} cities`;
+      $("#filter-label").textContent = label;
     }
+
     function renderFilterPop() {
       const pop = $("#filter-pop");
+      const tab = state.filterTab;
       const counts = {}; state.events.forEach(e => { if (e.city) counts[e.city] = (counts[e.city]||0)+1; });
       const cities = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
-      const rows = cities.length ? cities.map(c => {
+      const cityRows = cities.length ? cities.map(c => {
         const on = state.cityFilter.has(c);
         return `<label class="radio" style="justify-content:flex-start;gap:8.4px;padding:5.6px;border-radius:6px;${on?"background:color-mix(in srgb, var(--color-accent) 12%, transparent)":""}">
           <input type="checkbox" data-city="${esc(c)}" ${on?"checked":""}><span class="dot" style="border-radius:4px"></span>
           <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c)}</span>
           <span style="font-family:var(--fr-mono);font-size:10px;color:color-mix(in srgb, var(--color-text) 42%, transparent)">${counts[c]}</span></label>`;
       }).join("") : `<span class="text-muted" style="font-size:13px;padding:5.6px">No cities yet.</span>`;
-      pop.innerHTML = `<div class="fr-city">${rows}</div>
-        <div style="display:flex;gap:5.6px;align-items:center;border-top:1px solid var(--color-divider);padding-top:8.4px">
-          <button class="btn btn-ghost" data-act="all">All cities</button>
-          <button class="btn btn-primary" data-act="done" style="margin-left:auto">Done</button></div>`;
-      pop.querySelectorAll("input[data-city]").forEach(i => i.onchange = () => { i.checked ? state.cityFilter.add(i.dataset.city) : state.cityFilter.delete(i.dataset.city); renderConcerts(); renderFilterButton(); });
-      pop.querySelector('[data-act="all"]').onclick = () => { state.cityFilter.clear(); renderFilterPop(); renderConcerts(); renderFilterButton(); };
+
+      const home = homePoint();
+      const withCoords = state.events.filter(e => typeof e.lat === "number").length;
+      const radiusBody = home
+        ? `<span class="fr-mono-note">AROUND ${esc((home.city || "you").toUpperCase())}</span>
+           <div class="fr-chips" style="margin-top:2.8px">
+             <button type="button" class="fr-chip ${state.radiusKm ? "" : "active"}" data-km="0">Any distance</button>
+             ${RADIUS_PRESETS.map(km => `<button type="button" class="fr-chip ${state.radiusKm === km ? "active" : ""}" data-km="${km}">${km} km</button>`).join("")}
+           </div>
+           <span class="text-muted" style="font-size:11.5px">${withCoords} of ${state.events.length} shows have a location. Anything unlocated is hidden while a radius is on.</span>`
+        : `<span class="text-muted" style="font-size:13px">Set a default city in Profile, or use your current location, to filter by distance.</span>`;
+
+      pop.innerHTML = `
+        <div class="fr-chips">
+          <button type="button" class="fr-chip ${tab === "cities" ? "active" : ""}" data-tab="cities"><i class="ph ph-map-pin"></i> Cities</button>
+          <button type="button" class="fr-chip ${tab === "radius" ? "active" : ""}" data-tab="radius"><i class="ph ph-crosshair"></i> Radius</button>
+        </div>
+        ${tab === "cities" ? `<div class="fr-city">${cityRows}</div>`
+                           : `<div style="display:flex;flex-direction:column;gap:5.6px">${radiusBody}</div>`}
+        <div style="display:flex;gap:5.6px;align-items:center;border-top:1px solid var(--color-divider);padding-top:8.4px;flex-wrap:wrap">
+          ${tab === "radius" ? `<button class="btn btn-ghost" data-act="geo"><i class="ph ph-crosshair"></i> Use my location</button>`
+                             : `<button class="btn btn-ghost" data-act="all">All cities</button>`}
+          <button class="btn btn-primary" data-act="done" style="margin-left:auto">Done</button>
+        </div>`;
+
+      // stopPropagation matters: these handlers re-render the popover, which detaches the
+      // clicked node — the document-level "clicked outside" check would then see a
+      // detached target and close the popover out from under the user.
+      pop.querySelectorAll("[data-tab]").forEach(b => b.onclick = e => {
+        e.stopPropagation(); state.filterTab = b.dataset.tab; renderFilterPop();
+      });
+      pop.querySelectorAll("input[data-city]").forEach(i => i.onchange = () => {
+        i.checked ? state.cityFilter.add(i.dataset.city) : state.cityFilter.delete(i.dataset.city);
+        renderConcerts(); renderFilterButton();
+      });
+      pop.querySelectorAll("[data-km]").forEach(b => b.onclick = e => {
+        e.stopPropagation();
+        state.radiusKm = +b.dataset.km;
+        renderFilterPop(); renderConcerts(); renderFilterButton();
+      });
+      const all = pop.querySelector('[data-act="all"]');
+      if (all) all.onclick = e => { e.stopPropagation(); state.cityFilter.clear(); renderFilterPop(); renderConcerts(); renderFilterButton(); };
+      const geo = pop.querySelector('[data-act="geo"]');
+      if (geo) geo.onclick = useMyLocation;
       pop.querySelector('[data-act="done"]').onclick = () => toggleFilter(false);
     }
 

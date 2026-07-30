@@ -15,6 +15,8 @@ class ConcertResult:
     in_stock: bool | None = None
     price: float | None = None     # cheapest listed ticket
     currency: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class SourceAdapter(Protocol):
