@@ -40,6 +40,7 @@
     <div class="brandrow"><span class="tick"></span><span class="brand">Frontrow</span><span class="tag tag-outline" style="margin-left:auto">Read-only</span></div>
     <h3 id="heading" style="margin:0">Loading…</h3>
     <span class="text-muted" id="subhead" style="font-size:14px"></span>
+    <blockquote id="note" hidden style="margin:5.6px 0 0;padding-left:11.2px;border-left:2px solid var(--color-accent);font-size:15px;line-height:1.5"></blockquote>
   </div></div>
   <div class="wrap" style="padding:16.8px 16.8px 33.6px">
     <div id="content"></div>
@@ -92,6 +93,11 @@
       return r.json();
     }).then(data => {
       document.getElementById("heading").textContent = `${data.owner_name} is going to these`;
+      if (data.note) {
+        const q = document.getElementById("note");
+        q.textContent = `“${data.note}”`;   // textContent, not innerHTML — public page, untrusted input
+        q.hidden = false;
+      }
       document.getElementById("subhead").textContent = data.concerts.length
         ? `${data.concerts.length} upcoming show${data.concerts.length===1?"":"s"} · ${esc(data.list_name)}`
         : esc(data.list_name);

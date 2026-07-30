@@ -255,9 +255,27 @@
         </div>
       </div>
       <hr class="hr" />
+      <div style="display:flex;flex-direction:column;gap:5.6px">
+        <h6 style="margin:0">Default city</h6>
+        <span class="text-muted" style="font-size:13px;margin-bottom:5.6px">Open Frontrow already filtered to your city.</span>
+        <select class="input" id="p-city" style="max-width:300px"></select>
+      </div>
+      <hr class="hr" />
       <div style="display:flex;flex-direction:column;gap:8.4px;align-items:flex-start">
         <h6 style="margin:0">Session</h6>
         <a class="btn btn-secondary" href="/oauth2/sign_out?rd=%2F%3Fsigned_out%3D1"><i class="ph ph-sign-out"></i> Sign out</a>
+      </div>
+      <hr class="hr" />
+      <div style="display:flex;flex-direction:column;gap:8.4px;align-items:flex-start">
+        <h6 style="margin:0;color:var(--fr-danger)">Danger zone</h6>
+        <span class="text-muted" style="font-size:13px">Stop watching everything on <b id="p-listname">this list</b> and clear it. The artists stay in Frontrow's catalog, so other lists keep them.</span>
+        <button class="btn" id="p-clear" style="color:var(--fr-danger);border-color:color-mix(in srgb, var(--fr-danger) 70%, transparent)"><i class="ph ph-trash"></i> Remove all artists</button>
+      </div>
+    </div>
+
+    <div id="signout-veil" hidden style="position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:var(--color-bg);animation:frFade .16s ease both">
+      <div style="display:flex;align-items:center;gap:11.2px;font-family:var(--font-heading);font-size:17px">
+        <i class="ph ph-spinner" style="animation:frSpin .9s linear infinite;color:var(--color-accent)"></i> Signing out…
       </div>
     </div>
 
@@ -310,6 +328,7 @@
     const state = {
       me: null, lists: [], currentId: null, detail: null,
       events: [], quick: "all", view: "list", calMonth: null, cityFilter: new Set(), loading: true,
+      defaultCityApplied: false,
     };
     const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -327,11 +346,21 @@
     matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme);
 
     // ── toast / dialogs ────────────────────────────────────────
-    function toast(msg, icon = "ph-check", color = "var(--fr-success)") {
+    // `action` = {label, run}. It gets the 4.2 s the toast is up; clicking the toast
+    // body still just dismisses it.
+    function toast(msg, icon = "ph-check", color = "var(--fr-success)", action = null) {
       const t = document.createElement("div");
       t.className = "fr-toast";
-      t.innerHTML = `<i class="ph ${icon}" style="color:${color}"></i><span>${esc(msg)}</span>`;
+      t.innerHTML = `<i class="ph ${icon}" style="color:${color}"></i><span>${esc(msg)}</span>` +
+        (action ? `<button class="btn btn-ghost" data-toast-action style="flex:none;padding:4px 9px">${esc(action.label)}</button>` : "");
       t.onclick = () => t.remove();
+      if (action) {
+        t.querySelector("[data-toast-action]").onclick = e => {
+          e.stopPropagation();
+          t.remove();
+          action.run();
+        };
+      }
       $("#toasts").appendChild(t);
       setTimeout(() => t.remove(), 4200);
     }
@@ -411,11 +440,21 @@
       try {
         const [detail, events] = await Promise.all([api(`/lists/${id}`), api(`/lists/${id}/events`)]);
         state.detail = detail; state.events = events; state.loading = false;
+        applyDefaultCity();
       } catch (e) {
         state.loading = false;
         toast("Couldn't open that list.", "ph-warning", "var(--fr-danger)");
       }
       render();
+    }
+
+    // Once per page load, and only if the city is actually on the board — otherwise the
+    // app would open on an empty list and look broken.
+    function applyDefaultCity() {
+      if (state.defaultCityApplied) return;
+      state.defaultCityApplied = true;
+      const city = state.me && state.me.default_city;
+      if (city && state.events.some(e => e.city === city)) state.cityFilter.add(city);
     }
 
     async function reloadCurrent() {
@@ -739,9 +778,23 @@
 
     function removeArtist(id, name) {
       confirmDialog({ title: `Remove ${name} from "${state.detail.name}"?`, body: "Their shows disappear from this list. You can add them back any time.", confirmLabel: "Remove", onConfirm: async () => {
-        try { await api(`/lists/${state.currentId}/artists/${id}`, { method: "DELETE" }); toast(`Removed ${name}`, "ph-trash", "var(--fr-danger)"); await reloadCurrent(); }
-        catch { toast("Couldn't remove that artist.", "ph-warning", "var(--fr-danger)"); }
+        const listId = state.currentId;
+        try {
+          await api(`/lists/${listId}/artists/${id}`, { method: "DELETE" });
+          await reloadCurrent();
+          toast(`Removed ${name}`, "ph-trash", "var(--fr-danger)", { label: "Undo", run: () => undoRemove(listId, id, name) });
+        } catch { toast("Couldn't remove that artist.", "ph-warning", "var(--fr-danger)"); }
       }});
+    }
+
+    async function undoRemove(listId, artistId, name) {
+      // Re-attaches the cached artist rather than re-adding by name, so undo doesn't
+      // wait on a scrape.
+      try {
+        await api(`/lists/${listId}/artists/${artistId}`, { method: "POST" });
+        if (state.currentId === listId) await reloadCurrent();
+        toast(`${name} is back`, "ph-arrow-counter-clockwise", "var(--color-accent)");
+      } catch { toast(`Couldn't bring ${name} back.`, "ph-warning", "var(--fr-danger)"); }
     }
 
     async function toggleAttend(productId, going) {
@@ -830,6 +883,15 @@
             <div style="display:flex;flex-direction:column;gap:5.6px">${peopleRows}</div>
             <span class="text-muted" style="font-size:11.5px">Invited people also need to be on Frontrow's allow-list to sign in.</span>
           </div>
+          <div style="display:flex;flex-direction:column;gap:8.4px">
+            <h6 style="margin:0">Say something (optional)</h6>
+            <p class="text-muted" style="margin:0;font-size:12.5px">Shows at the top of your public page, next to your name.</p>
+            <div style="display:flex;gap:5.6px;flex-wrap:wrap;align-items:flex-end">
+              <input class="input" id="note-input" maxlength="280" placeholder="Come along to any of these" style="flex:1 1 200px" value="${esc(state.detail.share_note || "")}" />
+              <button class="btn btn-secondary" id="note-btn">Save</button>
+            </div>
+            <a class="btn btn-ghost" id="preview-btn" style="align-self:flex-start;padding:4px 8px" hidden><i class="ph ph-arrow-square-out"></i> Preview the public page</a>
+          </div>
         </div>
         <div class="dialog-actions"><button class="btn btn-primary" data-act="done">Done</button></div>`);
       const reopen = () => { close(); openShare(); };
@@ -850,13 +912,65 @@
       };
       root.querySelector("#inv-btn").onclick = doInvite;
       root.querySelector("#inv-email").addEventListener("keydown", e => { if (e.key === "Enter") doInvite(); });
+
+      const saveNote = async () => {
+        const note = root.querySelector("#note-input").value.trim();
+        try {
+          const r = await api(`/lists/${state.currentId}/share-note`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note }) });
+          state.detail.share_note = r.share_note;
+          toast(note ? "Note saved" : "Note removed", "ph-chat-centered-text", "var(--color-accent)");
+        } catch { toast("Couldn't save that note.", "ph-warning", "var(--fr-danger)"); }
+      };
+      root.querySelector("#note-btn").onclick = saveNote;
+      root.querySelector("#note-input").addEventListener("keydown", e => { if (e.key === "Enter") saveNote(); });
+      // Only a viewer link maps to /s/<token>; an editor link is a join URL, so there's
+      // nothing to preview until a view link exists.
+      const viewLink = shares.find(s => s.role === "viewer");
+      const preview = root.querySelector("#preview-btn");
+      preview.hidden = !viewLink;
+      if (viewLink) { preview.href = `${origin}/s/${viewLink.token}`; preview.target = "_blank"; preview.rel = "noopener"; }
       root.querySelector('[data-act="done"]').onclick = async () => { close(); try { state.lists = await api("/lists"); state.detail = await api(`/lists/${state.currentId}`); render(); } catch {} };
     }
 
     // ── menus / views ──────────────────────────────────────────
     function closeMenus() { $("#menu").hidden = true; $("#list-menu").hidden = true; toggleFilter(false); }
     function toggleFilter(open) { const p = $("#filter-pop"), b = $("#btn-filter"); const show = open ?? p.hidden; if (show) renderFilterPop(); p.hidden = !show; b.setAttribute("aria-expanded", show); b.style.boxShadow = show ? "inset 0 0 0 1px var(--color-accent)" : ""; }
-    function showView(v) { $("#view-dashboard").hidden = v !== "dashboard"; $("#view-profile").hidden = v !== "profile"; closeMenus(); }
+    function showView(v) {
+      $("#view-dashboard").hidden = v !== "dashboard";
+      $("#view-profile").hidden = v !== "profile";
+      if (v === "profile") renderProfile();
+      closeMenus();
+    }
+
+    function renderProfile() {
+      $("#p-listname").textContent = state.detail ? state.detail.name : "this list";
+      $("#p-clear").disabled = !canEdit();
+      // Cities come from what's actually being tracked; a saved value is kept even if
+      // nothing in this list plays there right now, so switching lists can't wipe it.
+      const cities = [...new Set(state.events.map(e => e.city).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      const saved = state.me && state.me.default_city;
+      if (saved && !cities.includes(saved)) cities.push(saved);
+      $("#p-city").innerHTML = `<option value="">No default — show every city</option>` +
+        cities.map(c => `<option value="${esc(c)}" ${c === saved ? "selected" : ""}>${esc(c)}</option>`).join("");
+    }
+
+    async function saveDefaultCity(city) {
+      try {
+        state.me = await api("/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ default_city: city }) });
+        toast(city ? `Opening in ${city} from now on` : "Default city cleared", "ph-map-pin", "var(--color-accent)");
+      } catch { toast("Couldn't save that preference.", "ph-warning", "var(--fr-danger)"); }
+    }
+
+    function clearList() {
+      confirmDialog({ title: `Remove every artist from "${state.detail.name}"?`, body: "The list goes empty. The artists stay in Frontrow's catalog, so any other list keeps them — but this list can't be undone in one click.", confirmLabel: "Remove all", onConfirm: async () => {
+        try {
+          const r = await api(`/lists/${state.currentId}/artists`, { method: "DELETE" });
+          await reloadCurrent();
+          showView("dashboard");
+          toast(`Removed ${r.removed} artist${r.removed === 1 ? "" : "s"}`, "ph-trash", "var(--fr-danger)");
+        } catch { toast("Couldn't clear the list.", "ph-warning", "var(--fr-danger)"); }
+      }});
+    }
 
     // ── events ─────────────────────────────────────────────────
     $("#btn-add").onclick = addArtist;
@@ -899,6 +1013,15 @@
     $("#btn-rename").onclick = renameList; $("#btn-delete").onclick = deleteList;
     $("#mi-profile").onclick = () => showView("profile");
     $("#btn-back").onclick = () => showView("dashboard");
+    $("#p-city").addEventListener("change", e => saveDefaultCity(e.target.value));
+    $("#p-clear").onclick = clearList;
+    // "Signing out…" while the proxy clears the cookie. The href stays authoritative,
+    // so this still works if the JS never runs.
+    document.querySelectorAll('a[href^="/oauth2/sign_out"]').forEach(a => a.addEventListener("click", e => {
+      e.preventDefault();
+      $("#signout-veil").hidden = false;
+      setTimeout(() => { location.href = a.href; }, 280);
+    }));
     $("#btn-filter").onclick = e => { e.stopPropagation(); toggleFilter(); };
     $("#chips").addEventListener("click", e => { const b = e.target.closest("[data-quick]"); if (!b) return; state.quick = b.dataset.quick; syncChips(); renderConcerts(); });
     $("#view-seg").addEventListener("change", e => { state.view = e.target.value; renderConcerts(); });

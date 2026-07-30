@@ -9,6 +9,12 @@ applied only when the column is absent — and additive, so no data is ever drop
 from sqlalchemy import Engine
 
 NEW_COLUMNS: dict[str, dict[str, str]] = {
+    "users": {
+        "default_city": "VARCHAR",
+    },
+    "lists": {
+        "share_note": "VARCHAR",
+    },
     "artists": {
         "last_checked_at": "DATETIME",
         "image": "VARCHAR",

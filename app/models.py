@@ -18,6 +18,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    # Preferred city; the dashboard opens filtered to it. NULL = show every city.
+    default_city: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 # ── Catalog + scrape cache (disposable, re-scrapeable) ──────────────────────
@@ -78,6 +80,9 @@ class ArtistList(Base):
     name: Mapped[str] = mapped_column(String)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    # Optional line shown at the top of the public share page. Belongs to the list, not
+    # to a single link — every link renders the same page.
+    share_note: Mapped[str | None] = mapped_column(String, nullable=True)
 
     owner: Mapped["User"] = relationship()
     members: Mapped[list["ListMember"]] = relationship(

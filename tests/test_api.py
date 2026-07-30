@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import pytest
+
 from app.models import Artist, Event, ListArtist, utcnow
 
 from tests.conftest import H
@@ -179,6 +181,84 @@ def test_artist_without_a_picture_is_still_tracked(client, monkeypatch):
     r = client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
     assert r.status_code == 200 and r.json()["concerts_found"] == 2
     assert client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artists"][0]["image"] is None
+
+
+# ── preferences, undo, share note, clear list ────────────────────────────────
+def test_default_city_round_trips(client):
+    default_list(client, "a@x.com")
+    assert client.get("/api/me", headers=H("a@x.com")).json()["default_city"] is None
+    r = client.patch("/api/me", json={"default_city": "Köln"}, headers=H("a@x.com"))
+    assert r.json()["default_city"] == "Köln"
+    assert client.get("/api/me", headers=H("a@x.com")).json()["default_city"] == "Köln"
+    # blank clears it rather than storing an empty string
+    assert client.patch("/api/me", json={"default_city": "  "}, headers=H("a@x.com")).json()["default_city"] is None
+
+
+def test_reattaching_an_artist_needs_no_scrape(client, monkeypatch):
+    """What Undo does: the artist and its cached events survive removal, so putting it
+    back must not go near the network."""
+    lid = default_list(client, "a@x.com")["id"]
+    aid = client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com")).json()["artist_id"]
+    client.delete(f"/api/lists/{lid}/artists/{aid}", headers=H("a@x.com"))
+    assert client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json() == []
+
+    monkeypatch.setattr("app.main.scrape_artist", lambda db, artist: pytest.fail("undo must not scrape"))
+    r = client.post(f"/api/lists/{lid}/artists/{aid}", headers=H("a@x.com"))
+    assert r.status_code == 200 and r.json()["name"] == "Bonobo"
+    assert len(client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()) == 2
+
+
+def test_reattach_is_idempotent_and_rejects_unknown_artists(client):
+    lid = default_list(client, "a@x.com")["id"]
+    aid = client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com")).json()["artist_id"]
+    client.post(f"/api/lists/{lid}/artists/{aid}", headers=H("a@x.com"))  # already attached
+    assert client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artist_count"] == 1
+    assert client.post(f"/api/lists/{lid}/artists/9999", headers=H("a@x.com")).status_code == 404
+
+
+def test_share_note_shows_on_the_public_page(client):
+    lid = default_list(client, "a@x.com")["id"]
+    client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
+    token = client.post(f"/api/lists/{lid}/shares", json={"role": "viewer"}, headers=H("a@x.com")).json()["token"]
+    assert client.get(f"/api/shared/{token}").json()["note"] is None
+
+    client.put(f"/api/lists/{lid}/share-note", json={"note": "Come along to any of these"}, headers=H("a@x.com"))
+    assert client.get(f"/api/shared/{token}").json()["note"] == "Come along to any of these"
+    assert client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["share_note"] == "Come along to any of these"
+    # blank removes it
+    client.put(f"/api/lists/{lid}/share-note", json={"note": ""}, headers=H("a@x.com"))
+    assert client.get(f"/api/shared/{token}").json()["note"] is None
+
+
+def test_share_note_is_owner_only_and_length_capped(client):
+    lid = default_list(client, "a@x.com")["id"]
+    share = client.post(f"/api/lists/{lid}/shares", json={"role": "editor"}, headers=H("a@x.com")).json()
+    client.post("/api/shares/join", json={"token": share["token"]}, headers=H("b@x.com"))
+    assert client.put(f"/api/lists/{lid}/share-note", json={"note": "hi"}, headers=H("b@x.com")).status_code == 403
+    long = client.put(f"/api/lists/{lid}/share-note", json={"note": "x" * 500}, headers=H("a@x.com")).json()
+    assert len(long["share_note"]) == 280
+
+
+def test_clear_list_empties_it_but_keeps_the_catalog(client):
+    lid = default_list(client, "a@x.com")["id"]
+    for name in ("Bonobo", "Kraftwerk"):
+        client.post(f"/api/lists/{lid}/artists", json={"name": name}, headers=H("a@x.com"))
+    other = client.post("/api/lists", json={"name": "Keep"}, headers=H("a@x.com")).json()["id"]
+    client.post(f"/api/lists/{other}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
+
+    r = client.delete(f"/api/lists/{lid}/artists", headers=H("a@x.com"))
+    assert r.status_code == 200 and r.json()["removed"] == 2
+    assert client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artists"] == []
+    # the other list is untouched, and the artist is still re-attachable
+    assert client.get(f"/api/lists/{other}", headers=H("a@x.com")).json()["artist_count"] == 1
+
+
+def test_clear_list_requires_edit_rights(client):
+    lid = default_list(client, "a@x.com")["id"]
+    client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
+    default_list(client, "b@x.com")
+    assert client.delete(f"/api/lists/{lid}/artists", headers=H("b@x.com")).status_code == 403
+    assert client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artist_count"] == 1
 
 
 # ── permissions ──────────────────────────────────────────────────────────────

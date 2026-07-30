@@ -71,6 +71,14 @@ class InviteIn(BaseModel):
     role: str = "editor"
 
 
+class NoteIn(BaseModel):
+    note: str | None = None
+
+
+class PrefsIn(BaseModel):
+    default_city: str | None = None
+
+
 # ── helpers ──────────────────────────────────────────────────────────────────
 def _naive(dt):
     return dt.replace(tzinfo=None) if (dt and dt.tzinfo) else dt
@@ -143,6 +151,7 @@ def _list_summary(db: Session, lst: ArtistList, role: str) -> dict:
     return {
         "id": lst.id,
         "name": lst.name,
+        "share_note": lst.share_note,
         "is_default": lst.is_default,
         "role": role,
         "can_edit": role in ("owner", "editor"),
@@ -181,7 +190,15 @@ def _artist_or_create(db: Session, name: str) -> Artist:
 # ── identity ─────────────────────────────────────────────────────────────────
 @app.get("/api/me")
 def me(user: User = Depends(current_user)):
-    return {"email": user.email, "name": user.name}
+    return {"email": user.email, "name": user.name, "default_city": user.default_city}
+
+
+@app.patch("/api/me")
+def update_me(payload: PrefsIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    city = (payload.default_city or "").strip()
+    user.default_city = city or None
+    db.commit()
+    return {"email": user.email, "name": user.name, "default_city": user.default_city}
 
 
 # ── lists ────────────────────────────────────────────────────────────────────
@@ -274,6 +291,30 @@ def add_artist(list_id: int, payload: NameIn, user: User = Depends(current_user)
     return {"artist_id": artist.id, "name": name, "concerts_found": found}
 
 
+@app.post("/api/lists/{list_id}/artists/{artist_id}")
+def attach_artist(list_id: int, artist_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Re-attach an artist that's already in the catalog, without scraping. Backs the
+    Undo on a removal: the events are still cached, so a fresh scrape would only be slow."""
+    lst = require_edit(db, user, list_id)
+    artist = db.get(Artist, artist_id)
+    if not artist:
+        raise HTTPException(404, "Unknown artist")
+    if not db.query(ListArtist).filter_by(list_id=lst.id, artist_id=artist.id).first():
+        db.add(ListArtist(list_id=lst.id, artist_id=artist.id))
+        db.commit()
+    return _artist_summary(artist)
+
+
+@app.delete("/api/lists/{list_id}/artists")
+def remove_all_artists(list_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Empty the list. The artists stay in the catalog (other lists may track them), so
+    this only drops this list's memberships."""
+    lst = require_edit(db, user, list_id)
+    removed = db.query(ListArtist).filter_by(list_id=lst.id).delete()
+    db.commit()
+    return {"removed": removed}
+
+
 @app.delete("/api/lists/{list_id}/artists/{artist_id}")
 def remove_artist(list_id: int, artist_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
     lst = require_edit(db, user, list_id)
@@ -306,6 +347,15 @@ def create_share(list_id: int, payload: ShareIn, user: User = Depends(current_us
     db.commit()
     db.refresh(link)
     return _share_dict(link)
+
+
+@app.put("/api/lists/{list_id}/share-note")
+def set_share_note(list_id: int, payload: NoteIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    lst = require_owner(db, user, list_id)
+    note = (payload.note or "").strip()
+    lst.share_note = note[:280] or None
+    db.commit()
+    return {"share_note": lst.share_note}
 
 
 @app.delete("/api/shares/{share_id}")
@@ -419,6 +469,7 @@ def shared_view(token: str, db: Session = Depends(get_db)):
     return {
         "owner_name": (owner.name or owner.email.split("@")[0]),
         "list_name": lst.name,
+        "note": lst.share_note,
         "role": link.role,
         "concerts": _list_events(db, lst, user=None),
     }
