@@ -1,4 +1,6 @@
-from app.models import Artist
+from datetime import datetime
+
+from app.models import Artist, Event, ListArtist, utcnow
 
 from tests.conftest import H
 
@@ -70,6 +72,69 @@ def test_attending_toggle_is_per_user(client):
     client.post("/api/events/attending", json={"product_id": pid, "attending": False}, headers=H("a@x.com"))
     a_evs = client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()
     assert {e["product_id"]: e["attending"] for e in a_evs}[pid] is False
+
+
+# ── availability ─────────────────────────────────────────────────────────────
+def test_availability_and_price_are_exposed(client):
+    lid = default_list(client, "a@x.com")["id"]
+    client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
+    evs = {e["city"]: e for e in client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()}
+    assert evs["Berlin"]["availability"] == "available"
+    assert (evs["Berlin"]["price"], evs["Berlin"]["currency"]) == (45.45, "EUR")
+    assert evs["Köln"]["availability"] == "sold_out"
+    assert evs["Köln"]["price"] is None
+
+
+def test_sold_out_show_stays_visible_and_can_be_marked_bought(client):
+    """You may have bought a ticket before it sold out — the marker must still work."""
+    lid = default_list(client, "a@x.com")["id"]
+    client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
+    sold_out = [e for e in client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()
+                if e["availability"] == "sold_out"][0]
+    r = client.post("/api/events/attending",
+                    json={"product_id": sold_out["product_id"], "attending": True}, headers=H("a@x.com"))
+    assert r.status_code == 200
+    after = [e for e in client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()
+             if e["product_id"] == sold_out["product_id"]][0]
+    assert after["attending"] is True and after["availability"] == "sold_out"
+
+
+def test_events_scraped_before_availability_tracking_are_unknown_not_sold_out(client, session_factory):
+    lid = default_list(client, "a@x.com")["id"]
+    s = session_factory()
+    artist = Artist(name="Kraftwerk")
+    s.add(artist)
+    s.commit()
+    s.add_all([
+        ListArtist(list_id=lid, artist_id=artist.id),
+        Event(product_id="legacy-1", artist_id=artist.id, name="Kraftwerk — 3D",
+              start_date=datetime(2027, 6, 1, 20, 0), city="Düsseldorf"),
+    ])
+    s.commit()
+    s.close()
+    ev = client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()[0]
+    assert ev["availability"] == "unknown"
+
+
+def test_artist_summary_distinguishes_empty_from_sold_out(client, session_factory):
+    lid = default_list(client, "a@x.com")["id"]
+    client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
+    s = session_factory()
+    checked = Artist(name="Checked Nobody", last_checked_at=utcnow())
+    unchecked = Artist(name="Unchecked Nobody")
+    s.add_all([checked, unchecked])
+    s.commit()
+    s.add_all([ListArtist(list_id=lid, artist_id=checked.id),
+               ListArtist(list_id=lid, artist_id=unchecked.id)])
+    s.commit()
+    s.close()
+
+    arts = {a["name"]: a for a in client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artists"]}
+    assert arts["Bonobo"] == {"id": arts["Bonobo"]["id"], "name": "Bonobo", "event_count": 2,
+                              "sold_out_count": 1, "cancelled_count": 0, "bookable_count": 1,
+                              "checked": True}
+    assert (arts["Checked Nobody"]["event_count"], arts["Checked Nobody"]["checked"]) == (0, True)
+    assert (arts["Unchecked Nobody"]["event_count"], arts["Unchecked Nobody"]["checked"]) == (0, False)
 
 
 # ── permissions ──────────────────────────────────────────────────────────────

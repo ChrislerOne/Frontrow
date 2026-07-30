@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from .auth import current_user, require_edit, require_owner, require_view, role_of
 from .database import Base, engine, get_db
 from .artist_search import deezer_search
+from .migrate import ensure_columns
 from .models import (
     Artist, ArtistList, ArtistSuggestion, Event, EventAttending, ListArtist, ListInvite,
     ListMember, ShareLink, User,
@@ -23,6 +24,8 @@ from .scraper import scrape_all, scrape_artist
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)  # additive: creates new tables, leaves existing
+    for column in ensure_columns(engine):  # create_all can't add columns to old tables
+        print(f"[migrate] added {column}")
     start_scheduler()
     yield
 
@@ -60,6 +63,22 @@ def _naive(dt):
     return dt.replace(tzinfo=None) if (dt and dt.tzinfo) else dt
 
 
+def _availability(e: Event) -> str:
+    """Collapse the source's status + stock flag into one of four states the UI can
+    style. Rows scraped before availability was tracked have status NULL and stay
+    "unknown" — they must not masquerade as sold out."""
+    status = (e.status or "").replace(" ", "").lower()
+    if status == "soldout":
+        return "sold_out"
+    if status == "cancelled":
+        return "cancelled"
+    if e.in_stock:
+        return "available"
+    if e.status is None:
+        return "unknown"
+    return "unavailable"  # still listed, but no tickets on offer (pre-sale, off-sale)
+
+
 def _event_dict(e: Event, is_new: bool, attending: bool = False) -> dict:
     return {
         "id": e.id,
@@ -72,6 +91,9 @@ def _event_dict(e: Event, is_new: bool, attending: bool = False) -> dict:
         "link": e.link,
         "is_new": is_new,
         "attending": attending,
+        "availability": _availability(e),
+        "price": e.price,
+        "currency": e.currency,
     }
 
 
@@ -113,6 +135,21 @@ def _list_summary(db: Session, lst: ArtistList, role: str) -> dict:
         "artist_count": len(lst.artists_assoc),
         "shared_with_me": role != "owner",  # someone shared this list with me
         "shared_out": shared_out,           # I own it and it's shared with others
+    }
+
+
+def _artist_summary(a: Artist) -> dict:
+    """Enough per-artist detail for the sidebar to say *why* there's nothing to show:
+    never checked, checked and nothing announced, or everything sold out."""
+    states = [_availability(e) for e in a.events]
+    return {
+        "id": a.id,
+        "name": a.name,
+        "event_count": len(states),
+        "sold_out_count": states.count("sold_out"),
+        "cancelled_count": states.count("cancelled"),
+        "bookable_count": sum(1 for s in states if s in ("available", "unknown")),
+        "checked": a.last_checked_at is not None,
     }
 
 
@@ -168,8 +205,7 @@ def get_list(list_id: int, user: User = Depends(current_user), db: Session = Dep
     role = role_of(db, user, lst)
     summary = _list_summary(db, lst, role)
     summary["artists"] = sorted(
-        ({"id": la.artist.id, "name": la.artist.name, "event_count": len(la.artist.events)}
-         for la in lst.artists_assoc),
+        (_artist_summary(la.artist) for la in lst.artists_assoc),
         key=lambda a: a["name"].lower(),
     )
     return summary

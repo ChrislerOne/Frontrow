@@ -11,6 +11,10 @@ class ConcertResult:
     city: str | None
     venue: str | None
     link: str | None
+    status: str | None = None      # source's own wording, e.g. "Available" / "SoldOut"
+    in_stock: bool | None = None
+    price: float | None = None     # cheapest listed ticket
+    currency: str | None = None
 
 
 class SourceAdapter(Protocol):

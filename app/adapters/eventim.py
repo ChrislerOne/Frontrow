@@ -116,6 +116,8 @@ class EventimAdapter:
             return None  # non-concert product (e.g. merch, package)
 
         location = live.get("location") or {}
+        # Eventim reports status as Available / SoldOut / Cancelled, and only carries
+        # `price` (the "ab X €" figure) while tickets are actually in stock.
         return ConcertResult(
             product_id=str(product["productId"]),
             name=product.get("name", ""),
@@ -123,4 +125,8 @@ class EventimAdapter:
             city=location.get("city"),
             venue=location.get("name"),
             link=product.get("link"),
+            status=product.get("status"),
+            in_stock=product.get("inStock"),
+            price=product.get("price"),
+            currency=product.get("currency"),
         )

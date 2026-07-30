@@ -1,32 +1,46 @@
 from sqlalchemy.orm import Session
 
+from .adapters.base import ConcertResult
 from .adapters.eventim import EventimAdapter
-from .models import Artist, Event, ListArtist
+from .models import Artist, Event, ListArtist, utcnow
 
 adapter = EventimAdapter()
 
 
+def _apply(event: Event, concert: ConcertResult) -> None:
+    """Refresh the volatile fields. Availability and price change over the life of a
+    show — a date that was on sale last cycle can be sold out this one — so a known
+    event is updated rather than skipped."""
+    event.name = concert.name
+    event.start_date = concert.start_date
+    event.city = concert.city
+    event.venue = concert.venue
+    event.link = concert.link
+    event.status = concert.status
+    event.in_stock = concert.in_stock
+    event.price = concert.price
+    event.currency = concert.currency
+    event.last_checked_at = utcnow()
+
+
 def scrape_artist(db: Session, artist: Artist) -> int:
-    known_ids = {event.product_id for event in artist.events}
+    known = {event.product_id: event for event in artist.events}
+    seen: set[str] = set()
     new_count = 0
 
     for concert in adapter.fetch_concerts(artist.name):
-        if concert.product_id in known_ids:
-            continue  # already stored, or a duplicate across paginated results
-        known_ids.add(concert.product_id)
-        db.add(
-            Event(
-                product_id=concert.product_id,
-                artist_id=artist.id,
-                name=concert.name,
-                start_date=concert.start_date,
-                city=concert.city,
-                venue=concert.venue,
-                link=concert.link,
-            )
-        )
-        new_count += 1
+        if concert.product_id in seen:
+            continue  # duplicate across paginated results
+        seen.add(concert.product_id)
 
+        event = known.get(concert.product_id)
+        if event is None:
+            event = Event(product_id=concert.product_id, artist_id=artist.id)
+            db.add(event)
+            new_count += 1
+        _apply(event, concert)
+
+    artist.last_checked_at = utcnow()
     db.commit()
     return new_count
 

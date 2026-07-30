@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -27,6 +27,9 @@ class Artist(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, index=True)
     added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    # NULL until the first successful scrape. Lets the UI tell "we looked and there's
+    # nothing" apart from "we haven't looked yet / the source was blocked".
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     events: Mapped[list["Event"]] = relationship(
         back_populates="artist", cascade="all, delete-orphan"
@@ -49,6 +52,15 @@ class Event(Base):
     # schema change stays additive — no destructive migration.
     is_new: Mapped[bool] = mapped_column(Boolean, default=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    # Availability as last reported by the source. status ∈ {Available, SoldOut,
+    # Cancelled}; NULL on rows stored before availability was tracked, which reads as
+    # "unknown" — never as sold out. price is the cheapest ticket the source lists.
+    status: Mapped[str | None] = mapped_column(String, nullable=True)
+    in_stock: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    currency: Mapped[str | None] = mapped_column(String, nullable=True)
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     artist: Mapped["Artist"] = relationship(back_populates="events")
 

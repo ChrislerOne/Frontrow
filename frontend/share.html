@@ -17,6 +17,9 @@
     .brand{font-family:var(--font-heading);font-size:13px;letter-spacing:.22em;text-transform:uppercase}
     .grid{display:grid;gap:11.2px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
     .card{position:relative;overflow:hidden;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
+    .card.out{background:color-mix(in srgb, var(--color-surface) 62%, var(--color-bg))}
+    .card.out .title{color:color-mix(in srgb, var(--color-text) 58%, transparent)}
+    .avail{font-family:var(--fr-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 6px;border-radius:4px;color:var(--fr-danger);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--fr-danger) 55%, transparent)}
     .cmain{padding:16.8px 16.8px 11.2px;display:flex;flex-direction:column;gap:5.6px;flex:1}
     .kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent)}
     .title{font-family:var(--font-heading);font-weight:500;font-size:17px;line-height:1.2;text-wrap:pretty}
@@ -58,11 +61,20 @@
 
     const token = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
 
+    const AVAIL = { sold_out: "Sold out", cancelled: "Cancelled", unavailable: "No tickets" };
+    const money = e => e.price == null ? null : new Intl.NumberFormat(undefined, { style: "currency", currency: e.currency || "EUR" }).format(e.price);
+
     function card(e) {
       const link = safeUrl(e.link);
-      const ticket = link ? `<a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-ticket"></i> Tickets</a>` : `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`;
-      return `<article class="card"><div class="cmain"><span class="kicker">${esc(e.artist)}</span><span class="title">${esc(e.name || e.artist)}</span></div>
-        <div class="perf"></div><div class="stub"><div class="meta"><span>${esc(dateLine(e.start_date))}</span><span class="place">${esc(place(e))}</span></div>${ticket}</div></article>`;
+      const av = AVAIL[e.availability];
+      const from = money(e);
+      const ticket = !link ? `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`
+        : av ? `<a class="btn btn-secondary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-arrow-square-out"></i> Event page</a>`
+        : `<a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-ticket"></i> Tickets</a>`;
+      return `<article class="card${av ? " out" : ""}"><div class="cmain">
+          <div style="display:flex;align-items:baseline;gap:8.4px"><span class="kicker">${esc(e.artist)}</span>${av ? `<span class="avail" style="margin-left:auto">${esc(av)}</span>` : ""}</div>
+          <span class="title">${esc(e.name || e.artist)}</span></div>
+        <div class="perf"></div><div class="stub"><div class="meta"><span>${esc(dateLine(e.start_date))}</span><span class="place">${esc(place(e))}</span>${from ? `<span style="color:var(--color-accent)">FROM ${esc(from)}</span>` : ""}</div>${ticket}</div></article>`;
     }
     function emptyState(icon, h, sub) {
       return `<div class="empty"><i class="ph ${icon}"></i><span style="font-family:var(--font-heading);font-size:18px">${esc(h)}</span><span class="text-muted" style="font-size:14px">${esc(sub)}</span></div>`;

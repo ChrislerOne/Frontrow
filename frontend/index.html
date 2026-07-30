@@ -51,6 +51,8 @@
     .fr-artist-row:hover{background:var(--color-neutral-800)}
     .fr-artist-name{flex:1;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fr-artist-count{font-family:var(--fr-mono);font-size:11px;color:color-mix(in srgb, var(--color-text) 45%, transparent)}
+    .fr-artist-note{font-size:11px;letter-spacing:.02em;color:color-mix(in srgb, var(--color-text) 42%, transparent);flex:none;display:inline-flex;align-items:center;gap:4px}
+    .fr-artist-note.out{color:var(--fr-danger)}
     .fr-rm{width:28px;height:28px;color:color-mix(in srgb, var(--color-text) 55%, transparent)}
     .fr-rm:hover{color:var(--fr-danger);background:color-mix(in srgb, var(--fr-danger) 12%, transparent)}
     .fr-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8.4px}
@@ -61,18 +63,25 @@
     @media (hover:hover){.fr-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}}
     .fr-card.is-attending{box-shadow:0 0 0 1.5px var(--color-accent), 0 8px 20px rgba(0,0,0,.45)}
     .fr-card.is-attending:hover{box-shadow:0 0 0 1.5px var(--color-accent), 0 10px 24px rgba(0,0,0,.55)}
+    /* Not-bookable shows stay on the board — the title dims and a tag says why, but a
+       ticket you already hold still highlights the card. */
+    .fr-card.is-out{background:color-mix(in srgb, var(--color-surface) 62%, var(--color-bg))}
+    .fr-card.is-out .fr-title{color:color-mix(in srgb, var(--color-text) 58%, transparent)}
+    .fr-card.is-out .fr-meta{color:color-mix(in srgb, var(--color-text) 62%, transparent)}
+    .fr-avail{font-family:var(--fr-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;flex:none}
+    .fr-avail.danger{color:var(--fr-danger);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--fr-danger) 55%, transparent)}
+    .fr-avail.muted{color:color-mix(in srgb, var(--color-text) 55%, transparent);box-shadow:inset 0 0 0 1px var(--color-divider)}
+    .fr-price{color:var(--color-accent)}
     .fr-card-main{padding:16.8px 16.8px 11.2px;display:flex;flex-direction:column;gap:5.6px;flex:1}
     .fr-kicker-row{display:flex;align-items:baseline;gap:8.4px}
-    .fr-kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fr-serial{margin-left:auto;font-family:var(--fr-mono);font-size:9px;letter-spacing:.1em;color:color-mix(in srgb, var(--color-text) 32%, transparent);flex:none}
     .fr-title{font-family:var(--font-heading);font-weight:500;font-size:17px;line-height:1.2;text-wrap:pretty}
-    .fr-seen-line{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:color-mix(in srgb, var(--color-text) 50%, transparent)}
     .fr-group + .fr-group{margin-top:11.2px}
     .fr-group-head{display:flex;align-items:center;gap:10px;width:100%;padding:11.2px 14px;background:var(--color-surface);box-shadow:var(--shadow-sm);border:0;border-radius:10px;cursor:pointer;color:var(--color-text);text-align:left}
     .fr-group-head:hover{box-shadow:var(--shadow-md)}
     .fr-group-head > .ph{color:var(--color-accent);font-size:15px;flex:none}
     .fr-group-name{font-family:var(--font-heading);font-weight:500;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .fr-group-count{font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);flex:none}
+    .fr-group-count{font-size:12.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fr-group-next{margin-left:auto;font-family:var(--fr-mono);font-size:10px;letter-spacing:.1em;color:color-mix(in srgb, var(--color-text) 42%, transparent);flex:none}
     .fr-group-body{padding-top:8.4px}
     .fr-going-line{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--color-accent)}
@@ -92,6 +101,7 @@
     .fr-cal-ev{display:block;font-size:11px;line-height:1.3;padding:2px 5px;border-radius:5px;background:color-mix(in srgb,var(--color-text) 8%,transparent);color:var(--color-text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fr-cal-ev:hover{background:color-mix(in srgb,var(--color-text) 15%,transparent)}
     .fr-cal-ev.att{background:color-mix(in srgb,var(--color-accent) 24%,transparent);color:var(--color-text)}
+    .fr-cal-ev.out{text-decoration:line-through;text-decoration-color:var(--fr-danger);color:color-mix(in srgb,var(--color-text) 50%,transparent)}
     .fr-cal-tba{display:flex;align-items:center;gap:8.4px;flex-wrap:wrap;margin-top:11.2px}
     @media(max-width:560px){.fr-cal-cell{min-height:62px}.fr-cal-ev{font-size:10px;padding:1px 4px}}
     .fr-perf{position:relative;height:1px;background:repeating-linear-gradient(to right, var(--color-divider) 0 5px, transparent 5px 11px)}
@@ -101,8 +111,6 @@
     .fr-meta{flex:1 1 150px;display:flex;flex-direction:column;gap:3px;font-family:var(--fr-mono);font-size:11.5px;letter-spacing:.04em;min-width:0}
     .fr-placeline{color:color-mix(in srgb, var(--color-text) 55%, transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fr-stub-actions{display:flex;align-items:center;gap:5.6px;flex:none}
-    .fr-markseen{color:color-mix(in srgb, var(--color-text) 60%, transparent);padding:5px 7px}
-    .fr-markseen:hover{color:var(--color-accent)}
 
     .fr-empty{display:flex;flex-direction:column;gap:8.4px;align-items:flex-start;padding:33.6px 22.4px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)}
     .fr-empty.sm{padding:22.4px 16.8px}
@@ -213,7 +221,8 @@
             <div class="fr-chips" id="chips">
               <button type="button" class="fr-chip active" data-quick="all">All <span data-c="all">0</span></button>
               <button type="button" class="fr-chip" data-quick="new">New <span data-c="new">0</span></button>
-              <button type="button" class="fr-chip" data-quick="attending"><i class="ph ph-star"></i> Attending <span data-c="attending">0</span></button>
+              <button type="button" class="fr-chip" data-quick="attending"><i class="ph ph-ticket"></i> Tickets bought <span data-c="attending">0</span></button>
+              <button type="button" class="fr-chip" data-quick="soldout"><i class="ph ph-prohibit"></i> Sold out <span data-c="soldout">0</span></button>
             </div>
             <div style="position:relative;flex:none;margin-left:auto">
               <button class="btn btn-secondary" id="btn-filter" aria-expanded="false" style="min-height:36px">
@@ -458,6 +467,23 @@
     }
 
     // ── artists / concerts (unchanged visuals, list-scoped data) ─
+    // A bare "0" never said whether we'd looked, found nothing, or found only sold-out
+    // dates. This spells it out.
+    function artistNote(a) {
+      if (!a.event_count) {
+        return a.checked
+          ? `<span class="fr-artist-note" title="Checked — the source lists no upcoming dates">No events planned</span>`
+          : `<span class="fr-artist-note" title="Frontrow hasn't managed to check this artist yet">Not checked yet</span>`;
+      }
+      if (!a.bookable_count) {
+        if (a.sold_out_count) return `<span class="fr-artist-note out" title="${a.sold_out_count} of ${a.event_count} show(s) sold out"><i class="ph ph-prohibit"></i> Sold out</span>`;
+        if (a.cancelled_count) return `<span class="fr-artist-note out"><i class="ph ph-x-circle"></i> Cancelled</span>`;
+        return `<span class="fr-artist-note">No tickets</span>`;
+      }
+      const soldOut = a.sold_out_count ? `<i class="ph ph-prohibit" title="${a.sold_out_count} sold out" style="color:var(--fr-danger)"></i>` : "";
+      return `<span class="fr-artist-note">${soldOut}<span class="fr-artist-count">${a.event_count}</span></span>`;
+    }
+
     function renderArtists() {
       const box = $("#artists");
       const arts = state.detail ? state.detail.artists : [];
@@ -476,18 +502,21 @@
       box.innerHTML = `<div style="display:flex;flex-direction:column;gap:2.8px">${arts.map(a => `
         <div class="fr-artist-row">
           <span class="fr-artist-name">${esc(a.name)}</span>
-          <span class="fr-artist-count">${a.event_count}</span>
+          ${artistNote(a)}
           ${canEdit() ? `<button class="btn btn-ghost btn-icon fr-rm" data-id="${a.id}" data-name="${esc(a.name)}" aria-label="Remove artist"><i class="ph ph-trash" style="font-size:15px"></i></button>` : ""}
         </div>`).join("")}</div>`;
       box.querySelectorAll(".fr-rm").forEach(b => b.onclick = () => removeArtist(+b.dataset.id, b.dataset.name));
     }
 
     const cityFiltered = () => state.cityFilter.size ? state.events.filter(e => e.city && state.cityFilter.has(e.city)) : state.events;
+    const QUICK = {
+      new: e => e.is_new,
+      attending: e => e.attending,
+      soldout: e => e.availability === "sold_out",
+    };
     function quickFiltered() {
-      let ev = cityFiltered();
-      if (state.quick === "new") ev = ev.filter(e => e.is_new);
-      else if (state.quick === "attending") ev = ev.filter(e => e.attending);
-      return ev;
+      const match = QUICK[state.quick];
+      return match ? cityFiltered().filter(match) : cityFiltered();
     }
     function syncChips() {
       document.querySelectorAll("#chips .fr-chip").forEach(c => c.classList.toggle("active", c.dataset.quick === state.quick));
@@ -497,8 +526,7 @@
       const base = cityFiltered();
       const setC = (k, v) => { const el = document.querySelector(`#chips [data-c="${k}"]`); if (el) el.textContent = v; };
       setC("all", base.length);
-      setC("new", base.filter(e => e.is_new).length);
-      setC("attending", base.filter(e => e.attending).length);
+      for (const [key, match] of Object.entries(QUICK)) setC(key, base.filter(match).length);
 
       const box = $("#concerts");
       if (state.loading) { box.innerHTML = `<div class="fr-grid">${Array.from({length:4}).map(()=>`<div class="fr-skel" style="height:150px"></div>`).join("")}</div>`; return; }
@@ -508,7 +536,8 @@
       }
       const list = quickFiltered();
       if (!list.length) {
-        const msg = state.quick === "attending" ? "You haven't marked any shows as attending yet." : state.quick === "new" ? "Nothing new right now." : "Try a different city.";
+        const msg = { attending: "You haven't marked a ticket as bought yet.", new: "Nothing new right now.",
+                      soldout: "Nothing on this list is sold out. Good." }[state.quick] || "Try a different city.";
         box.innerHTML = `<div class="fr-empty"><i class="ph ph-funnel"></i><span class="h">No shows match this filter</span><span class="text-muted" style="font-size:14px">${msg}</span><button class="btn btn-primary" id="empty-clear"><i class="ph ph-x"></i> Show all</button></div>`;
         $("#empty-clear").onclick = () => { state.cityFilter.clear(); state.quick = "all"; syncChips(); renderConcerts(); renderFilterButton(); }; return;
       }
@@ -530,12 +559,18 @@
 
       box.innerHTML = groupArr.map(g => {
         const open = expandedArtists.has(g.artist);
-        const going = g.events.filter(e => e.attending).length;
+        const bought = g.events.filter(e => e.attending).length;
+        const soldOut = g.events.filter(e => e.availability === "sold_out").length;
+        const low = cheapest(g.events);
+        const bits = [`${g.events.length} show${g.events.length === 1 ? "" : "s"}`];
+        if (low) bits.push(`from ${money(low)}`);
+        if (soldOut) bits.push(`${soldOut} sold out`);
+        if (bought) bits.push(`${bought} bought`);
         return `<div class="fr-group">
           <button class="fr-group-head" data-artist="${esc(g.artist)}" aria-expanded="${open}">
             <i class="ph ph-caret-${open ? "down" : "right"}"></i>
             <span class="fr-group-name">${esc(g.artist)}</span>
-            <span class="fr-group-count">${g.events.length} show${g.events.length === 1 ? "" : "s"}${going ? " · " + going + " going" : ""}</span>
+            <span class="fr-group-count">${esc(bits.join(" · "))}</span>
             <span class="fr-group-next">${g.next ? "NEXT · " + esc(shortDate(g.next)) : "DATE TBA"}</span>
           </button>
           <div class="fr-group-body" ${open ? "" : "hidden"}><div class="fr-grid">${g.events.map(cardHTML).join("")}</div></div>
@@ -568,7 +603,9 @@
         const isToday = today.getFullYear() === y && today.getMonth() === m && today.getDate() === day;
         cells += `<div class="fr-cal-cell${isToday ? " today" : ""}"><span class="fr-cal-day">${day}</span>${evd.map(e => {
           const u = safeUrl(e.link);
-          return `<a class="fr-cal-ev${e.attending ? " att" : ""}" ${u ? `href="${esc(u)}" target="_blank" rel="noopener"` : ""} title="${esc(e.artist + " — " + placeLine(e))}">${esc(e.artist)}</a>`;
+          const av = AVAIL[e.availability];
+          const tip = [e.artist, placeLine(e), av ? av.label : null, e.attending ? "Ticket bought" : null].filter(Boolean).join(" — ");
+          return `<a class="fr-cal-ev${e.attending ? " att" : ""}${av ? " out" : ""}" ${u ? `href="${esc(u)}" target="_blank" rel="noopener"` : ""} title="${esc(tip)}">${esc(e.artist)}</a>`;
         }).join("")}</div>`;
       }
       const tba = list.filter(e => !e.start_date);
@@ -580,31 +617,64 @@
           <button class="btn btn-ghost" id="cal-today">Today</button>
         </div>
         <div class="fr-cal-grid">${cells}</div>
-        ${tba.length ? `<div class="fr-cal-tba"><span class="fr-mono-note">DATE TBA</span>${tba.map(e => `<span class="tag tag-neutral">${esc(e.artist)}</span>`).join(" ")}</div>` : ""}`;
+        ${tba.length ? `<div class="fr-cal-tba"><span class="fr-mono-note">DATE TBA</span>${tba.map(e => {
+          const av = AVAIL[e.availability];
+          return `<span class="tag tag-neutral"${av ? ` style="text-decoration:line-through;text-decoration-color:var(--fr-danger)" title="${esc(av.label)}"` : ""}>${esc(e.artist)}</span>`;
+        }).join(" ")}</div>` : ""}`;
       $("#cal-prev").onclick = () => shiftMonth(-1);
       $("#cal-next").onclick = () => shiftMonth(1);
       $("#cal-today").onclick = () => { const d = new Date(); state.calMonth = { y: d.getFullYear(), m: d.getMonth() }; renderConcerts(); };
     }
     function shiftMonth(delta) { let { y, m } = state.calMonth; m += delta; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } state.calMonth = { y, m }; renderConcerts(); }
 
-    function cardHTML(e) {
+    // "unknown" = scraped before Frontrow tracked availability; treated as bookable
+    // rather than falsely marked unavailable.
+    const AVAIL = {
+      sold_out:    { label: "Sold out",   tone: "danger", icon: "ph-prohibit" },
+      cancelled:   { label: "Cancelled",  tone: "danger", icon: "ph-x-circle" },
+      unavailable: { label: "No tickets", tone: "muted",  icon: "ph-clock-countdown" },
+    };
+    const isBookable = e => e.availability === "available" || e.availability === "unknown" || !e.availability;
+    const money = e => e.price == null ? null : new Intl.NumberFormat(undefined,
+      { style: "currency", currency: e.currency || "EUR" }).format(e.price);
+    const cheapest = events => {
+      const priced = events.filter(e => e.price != null);
+      return priced.length ? priced.reduce((lo, e) => e.price < lo.price ? e : lo) : null;
+    };
+
+    function ticketButton(e) {
       const link = safeUrl(e.link);
-      const goingLine = e.attending ? `<span class="fr-going-line"><i class="ph ph-star"></i> Going</span>` : "";
+      if (!link) return `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`;
+      const open = `href="${esc(link)}" target="_blank" rel="noopener"`;
+      if (isBookable(e)) return `<a class="btn btn-primary" ${open}><i class="ph ph-ticket"></i> Tickets</a>`;
+      return `<a class="btn btn-secondary" ${open}><i class="ph ph-arrow-square-out"></i> Event page</a>`;
+    }
+
+    function cardHTML(e) {
+      const av = AVAIL[e.availability];
+      const availTag = av ? `<span class="fr-avail ${av.tone}" style="margin-left:auto"><i class="ph ${av.icon}"></i> ${av.label}</span>` : "";
+      const boughtLine = e.attending ? `<span class="fr-going-line"><i class="ph ph-ticket"></i> Ticket bought</span>` : "";
+      // Always available: you may well hold a ticket for a show that later sold out.
       const attendBtn = e.attending
-        ? `<button class="btn fr-attend" data-attend="${esc(e.product_id)}" data-on="1" style="color:var(--color-accent);border-color:var(--color-accent);padding:5px 9px"><i class="ph ph-star"></i> Going</button>`
-        : `<button class="btn btn-ghost fr-attend" data-attend="${esc(e.product_id)}" data-on="0" style="padding:5px 9px"><i class="ph ph-star"></i> I'm going</button>`;
-      const ticket = link
-        ? `<a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener"><i class="ph ph-ticket"></i> Tickets</a>`
-        : `<span class="tag tag-neutral" style="letter-spacing:.06em">No link yet</span>`;
-      return `<article class="fr-card${e.attending ? " is-attending" : ""}">
+        ? `<button class="btn fr-attend" data-attend="${esc(e.product_id)}" data-on="1" aria-pressed="true" style="color:var(--color-accent);border-color:var(--color-accent);padding:5px 9px"><i class="ph ph-ticket"></i> Ticket bought</button>`
+        : `<button class="btn btn-ghost fr-attend" data-attend="${esc(e.product_id)}" data-on="0" aria-pressed="false" style="padding:5px 9px"><i class="ph ph-plus-circle"></i> Got a ticket</button>`;
+      const from = money(e);
+      return `<article class="fr-card${e.attending ? " is-attending" : ""}${av ? " is-out" : ""}">
         <div class="fr-card-main">
-          <span class="fr-serial" style="margin-left:0">${esc(serial(e))}</span>
-          <span class="fr-title">${esc(e.name || e.artist)}</span>${goingLine}
+          <div class="fr-kicker-row">
+            <span class="fr-serial" style="margin-left:0">${esc(serial(e))}</span>
+            ${availTag}
+          </div>
+          <span class="fr-title">${esc(e.name || e.artist)}</span>${boughtLine}
         </div>
         <div class="fr-perf"></div>
         <div class="fr-stub">
-          <div class="fr-meta"><span>${esc(dateLine(e.start_date))}</span><span class="fr-placeline">${esc(placeLine(e))}</span></div>
-          <div class="fr-stub-actions">${attendBtn}${ticket}</div>
+          <div class="fr-meta">
+            <span>${esc(dateLine(e.start_date))}</span>
+            <span class="fr-placeline">${esc(placeLine(e))}</span>
+            ${from ? `<span class="fr-price">FROM ${esc(from)}</span>` : ""}
+          </div>
+          <div class="fr-stub-actions">${attendBtn}${ticketButton(e)}</div>
         </div></article>`;
     }
 
@@ -668,7 +738,7 @@
       try {
         await api("/events/attending", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_id: productId, attending: going }) });
         ev.attending = going; renderConcerts();
-        toast(going ? `Going to ${ev.artist}` : "Removed from your plans", "ph-star", "var(--color-accent)");
+        toast(going ? `Ticket saved — ${ev.artist}` : "Ticket removed", "ph-ticket", "var(--color-accent)");
       } catch { toast("Couldn't update that show.", "ph-warning", "var(--fr-danger)"); }
     }
 
