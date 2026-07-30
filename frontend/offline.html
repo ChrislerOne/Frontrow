@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Offline · Frontrow</title>
+<!-- Standalone by design: no external CSS, fonts or icons, so this page renders even
+     when the app's assets don't. Tokens are copied from Nocturne. -->
+<style>
+  :root{--bg:#161826;--surface:#232532;--text:#e9e9ed;--accent:#9184d9;--divider:rgba(233,233,237,.16);
+        --mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+        --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  @media (prefers-color-scheme: light){
+    :root{--bg:#e8ebf7;--surface:#f7f8fe;--text:#292b31;--accent:#5d5294;--divider:rgba(41,43,49,.18)}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:var(--body)}
+  .top{display:flex;align-items:center;gap:9px;padding:17px 22px}
+  .tick{width:3px;height:14px;background:var(--accent);border-radius:2px}
+  .brand{font-size:13px;letter-spacing:.22em;text-transform:uppercase;font-weight:500}
+  main{flex:1;display:grid;place-items:center;padding:22px 22px 56px}
+  .panel{width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px;align-items:flex-start;
+         padding:28px;border-radius:14px;background:var(--surface);box-shadow:0 0 0 1px var(--divider)}
+  .code{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--accent)}
+  h1{margin:0;font-size:27px;font-weight:500;line-height:1.15;letter-spacing:-.01em}
+  p{margin:0;font-size:15px;line-height:1.55;color:color-mix(in srgb,var(--text) 68%,transparent)}
+  .btn{display:inline-flex;align-items:center;gap:8px;margin-top:4px;padding:9px 15px;border-radius:8px;
+       border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);
+       font:inherit;font-size:14px;text-decoration:none}
+  .btn:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+  footer{padding:0 22px 22px;font-size:12px;color:color-mix(in srgb,var(--text) 45%,transparent)}
+</style>
+</head>
+<body>
+  <div class="top"><span class="tick"></span><span class="brand">Frontrow</span></div>
+  <main>
+    <div class="panel">
+      <span class="code">&middot;&middot;&middot;</span>
+      <h1>You&#39;re offline</h1>
+      <p>Frontrow needs a connection to check for new shows. Reconnect and your board comes straight back.</p>
+      <button class="btn" type="button" onclick="location.reload()">Retry</button>
+    </div>
+  </main>
+  <script>addEventListener("online", () => location.reload());</script>
+  <footer>Frontrow — a small thing for friends who go to shows.</footer>
+</body>
+</html>

@@ -66,6 +66,23 @@ def client(session_factory, monkeypatch):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture
+def crashing_client(session_factory, monkeypatch):
+    """A client that returns the 500 response instead of re-raising, so the error-page
+    handler can actually be exercised."""
+    def override_get_db():
+        db = session_factory()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    monkeypatch.setattr("app.main.scrape_all", lambda db: (_ for _ in ()).throw(RuntimeError("boom")))
+    yield TestClient(app, raise_server_exceptions=False)
+    app.dependency_overrides.clear()
+
+
 def H(email):
     """Auth header the way oauth2-proxy sets it on the upstream request."""
     return {"X-Forwarded-Email": email}

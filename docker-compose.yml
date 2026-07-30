@@ -32,7 +32,11 @@ services:
       - --authenticated-emails-file=/etc/oauth2-proxy/emails.txt
       - --cookie-secure=true
       - --cookie-expire=168h
-      - --skip-provider-button=true                # straight to Google, no interstitial
+      # Branded landing (sign_in.html) + access-denied (error.html). This is why
+      # --skip-provider-button is NOT set: skipping the button jumps straight to Google
+      # and the landing page would never render. Missing template files fall back to
+      # oauth2-proxy's defaults per file, so a broken mount degrades instead of failing.
+      - --custom-templates-dir=/etc/frontrow-templates
       # Public, unauthenticated read-only share pages (+ the CSS they need):
       - --skip-auth-route=^/s/
       - --skip-auth-route=^/api/shared/
@@ -44,6 +48,8 @@ services:
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
     volumes:
       - oauth2-emails:/etc/oauth2-proxy:ro         # emails.txt materialized by the init container
+      # Separate path, NOT nested under the read-only emails volume above.
+      - ./frontend/auth:/etc/frontrow-templates:ro
     expose:
       - "4180"
     # No healthcheck: distroless image (no shell/curl/wget); a failing probe would make

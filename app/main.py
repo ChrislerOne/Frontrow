@@ -2,9 +2,9 @@ import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -34,6 +34,19 @@ app = FastAPI(title="Frontrow", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
+
+
+# ── error pages ──────────────────────────────────────────────────────────────
+# 404 needs no handler: the StaticFiles mount below is configured with html=True, which
+# serves frontend/404.html for any unknown page. Unknown /api/* paths are caught by an
+# explicit route registered just above that mount, so they keep returning JSON.
+@app.exception_handler(Exception)
+async def server_error(request: Request, exc: Exception):
+    """Unhandled crash → the branded page for browsers, JSON for API callers. Starlette
+    has already logged the traceback; nothing internal reaches the response."""
+    if request.url.path.startswith("/api/"):
+        return JSONResponse({"detail": "Internal server error"}, status_code=500)
+    return FileResponse("frontend/500.html", status_code=500)
 
 
 class NameIn(BaseModel):
@@ -473,4 +486,12 @@ def shared_page(token: str):
     return FileResponse("frontend/share.html")
 
 
+# Must stay last among the /api routes: it claims everything the real endpoints didn't,
+# so an unknown API path gets a JSON 404 instead of falling through to the HTML page.
+@app.api_route("/api/{rest:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+def api_not_found(rest: str):
+    raise HTTPException(404, "Not found")
+
+
+# html=True also makes this serve frontend/404.html for unknown paths.
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
