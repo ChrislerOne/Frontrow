@@ -18,6 +18,20 @@ services:
     volumes:
       - oauth2-emails:/shared
 
+  # The landing + access-denied templates live in the repo (frontend/auth) and therefore
+  # in the app image. This copies them into a volume the proxy can mount, then exits.
+  # Same build context as the app, so it's a cache hit, not a second image build.
+  oauth2-templates-init:
+    build: .
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cp /app/frontend/auth/sign_in.html /app/frontend/auth/error.html /shared/
+        echo "templates published: $$(ls /shared | tr '\n' ' ')"
+    volumes:
+      - oauth2-templates:/shared
+
   # SSO gate: Google login, invite-only via the allowlist file above. Proxies to the
   # app only after auth, so the app itself needs no auth code.
   oauth2-proxy:
@@ -48,14 +62,19 @@ services:
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
     volumes:
       - oauth2-emails:/etc/oauth2-proxy:ro         # emails.txt materialized by the init container
-      # Separate path, NOT nested under the read-only emails volume above.
-      - ./frontend/auth:/etc/frontrow-templates:ro
+      # Branded sign_in/error templates, published out of the app image by
+      # oauth2-templates-init. A relative bind mount to ./frontend/auth does NOT work
+      # here: Coolify builds from a temp checkout and only keeps the compose file next
+      # to the app dir, so the mount resolved to an empty directory.
+      - oauth2-templates:/etc/frontrow-templates:ro
     expose:
       - "4180"
     # No healthcheck: distroless image (no shell/curl/wget); a failing probe would make
     # Traefik stop routing. Startup is gated on the app being healthy + the init done.
     depends_on:
       oauth2-emails-init:
+        condition: service_completed_successfully
+      oauth2-templates-init:
         condition: service_completed_successfully
       concert-tracker:
         condition: service_healthy
@@ -80,3 +99,4 @@ services:
 volumes:
   concert-data:
   oauth2-emails:
+  oauth2-templates:
