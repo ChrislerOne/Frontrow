@@ -14,7 +14,8 @@ def _event(db, **kw):
     db.commit()
     fields = dict(product_id=f"p{kw.pop('n', 1)}", artist_id=artist.id, name="Show",
                   start_date=datetime(2027, 5, 1, 20, 0),
-                  last_checked_at=datetime(2026, 7, 30, 12, 0))
+                  last_checked_at=datetime(2026, 7, 30, 12, 0),
+                  geo_source="eventim-city")
     fields.update(kw)
     e = Event(**fields)
     db.add(e)
@@ -68,48 +69,61 @@ def test_a_network_failure_is_not_cached(session_factory, monkeypatch):
     db.close()
 
 
-def test_backfill_prefers_the_venue_then_falls_back_to_the_city(session_factory, monkeypatch):
+def test_a_city_centroid_is_upgraded_to_the_real_venue(session_factory, monkeypatch):
+    """The bug this fixes: Eventim's geoLocation is the city centre, so seven Berlin
+    venues all came back as 52.5167, 13.4000 and stacked into one map pin."""
     db = session_factory()
     asked = []
 
     def fake(params):
         asked.append(params["q"])
-        if params["q"] == "Kulturzentrum Lagerhaus, Bremen":
-            return []                                  # venue unknown to OSM
-        return [{"lat": "53.07", "lon": "8.8", "display_name": "Bremen"}]
+        return [{"lat": "52.4906", "lon": "13.3792", "display_name": "Columbiahalle"}]
 
     monkeypatch.setattr(geocode, "_throttled_get", fake)
-    e = _event(db, n=1, city="Bremen", venue="Kulturzentrum Lagerhaus")
-    assert geocode.backfill_event_coords(db) == 1
-    assert asked == ["Kulturzentrum Lagerhaus, Bremen", "Bremen"]
+    e = _event(db, n=1, city="Berlin", venue="Columbiahalle", latitude=52.5167, longitude=13.4)
+    assert geocode.locate_events(db) == 1
+    assert asked == ["Columbiahalle, Berlin"]
     db.refresh(e)
-    assert (e.latitude, e.longitude) == (53.07, 8.8)
-    db.close()
+    assert (e.latitude, e.longitude, e.geo_source) == (52.4906, 13.3792, "venue")
 
 
-def test_backfill_skips_events_that_already_have_coordinates(session_factory, monkeypatch):
-    db = session_factory()
-    monkeypatch.setattr(geocode, "_throttled_get",
-                        lambda params: (_ for _ in ()).throw(AssertionError("must not geocode")))
-    _event(db, n=2, city="Berlin", venue="Columbiahalle", latitude=52.49, longitude=13.42)
-    assert geocode.backfill_event_coords(db) == 0
-    db.close()
-
-
-def test_backfill_is_bounded_per_run(session_factory, monkeypatch):
-    """A scrape cycle must not turn into a geocoding marathon."""
+def test_a_venue_osm_does_not_know_is_never_asked_about_again(session_factory, monkeypatch):
     db = session_factory()
     calls = {"n": 0}
 
-    def fake(params):
+    def empty(params):
         calls["n"] += 1
-        return [{"lat": "50.0", "lon": "8.0", "display_name": "x"}]
+        return []
 
-    monkeypatch.setattr(geocode, "_throttled_get", fake)
-    for i in range(6):
-        _event(db, n=10 + i, city=f"City{i}")
-    assert geocode.backfill_event_coords(db, limit=2) == 2
-    assert calls["n"] == 2
+    monkeypatch.setattr(geocode, "_throttled_get", empty)
+    e = _event(db, n=2, city="Passau", venue="Zauberberg", latitude=48.57, longitude=13.46)
+    assert geocode.locate_events(db) == 0
+    db.refresh(e)
+    assert e.geo_source == "venue-unknown"
+    assert (e.latitude, e.longitude) == (48.57, 13.46)   # the city point stands
+    assert geocode.locate_events(db) == 0
+    assert calls["n"] == 1                               # asked once, ever
+
+
+def test_a_venue_point_is_never_overwritten_by_a_later_scrape(session_factory, monkeypatch):
+    """Otherwise every 12h cycle would drag the pin back to the city centre."""
+    from app import scraper
+    from app.adapters.base import ConcertResult
+    db = session_factory()
+    e = _event(db, n=3, city="Berlin", venue="Columbiahalle",
+               latitude=52.4906, longitude=13.3792, geo_source="venue")
+    artist = e.artist
+
+    class Stub:
+        def fetch_concerts(self, name):
+            return [ConcertResult(product_id=e.product_id, name="Show", start_date=e.start_date,
+                                  city="Berlin", venue="Columbiahalle", link=None,
+                                  latitude=52.5167, longitude=13.4)]
+
+    monkeypatch.setattr(scraper, "adapter", Stub())
+    scraper.scrape_artist(db, artist)
+    db.refresh(e)
+    assert (e.latitude, e.longitude, e.geo_source) == (52.4906, 13.3792, "venue")
     db.close()
 
 
@@ -143,7 +157,7 @@ def test_backfill_ignores_events_that_have_never_been_scraped(session_factory, m
     e = _event(db, n=30, city="Bremen", venue="Lagerhaus")
     e.last_checked_at = None
     db.commit()
-    assert geocode.backfill_event_coords(db) == 0
+    assert geocode.locate_events(db) == 0
     db.close()
 
 

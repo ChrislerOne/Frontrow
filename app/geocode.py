@@ -88,39 +88,45 @@ def city_point(db: Session, city: str, *, resolve: bool = True) -> tuple[float, 
     return None
 
 
-def backfill_event_coords(db: Session, limit: int = BACKFILL_PER_RUN) -> int:
-    """Fill in coordinates for events Eventim gave none for, most specific query first.
-    Bounded per run so a scrape can't turn into a geocoding marathon.
+def locate_events(db: Session, limit: int = BACKFILL_PER_RUN) -> int:
+    """Give events a real venue position.
 
-    Only events that have actually been through a scrape (last_checked_at set) are
-    considered. Without that check, adding the coordinate columns made all 69 existing
-    rows look unlocated and the first run burned geocodes on venues Eventim supplies
-    for free on the next scrape."""
+    Eventim's geoLocation is the city centroid, so every show in a city lands on one
+    point — seven Berlin venues all came back as 52.5167, 13.4000. This resolves the
+    venue itself and upgrades the row, which is the only way the map can tell
+    Columbiahalle from Festsaal Kreuzberg.
+
+    Bounded per run so a scrape can't turn into a geocoding marathon, and each venue
+    costs at most one lookup ever: repeats hit the `places` cache, and a venue OSM
+    doesn't know is marked "venue-unknown" so it's never asked about again.
+    """
     pending = (
         db.query(Event)
-        .filter(Event.latitude.is_(None))
         .filter(Event.last_checked_at.isnot(None))
-        .filter((Event.city.isnot(None)) | (Event.venue.isnot(None)))
+        .filter(Event.venue.isnot(None), Event.city.isnot(None))
+        .filter(Event.geo_source.in_(("eventim-city",)) | Event.geo_source.is_(None))
         .limit(limit)
         .all()
     )
-    filled = 0
+    upgraded = 0
     for event in pending:
-        for query in _queries(event):
-            row = place_for(db, query)
-            if row and row.latitude is not None:
-                event.latitude, event.longitude = row.latitude, row.longitude
-                filled += 1
-                break
-    if filled:
-        db.commit()
-    return filled
+        row = place_for(db, f"{event.venue}, {event.city}")
+        if row is None:
+            continue                      # transient failure — try again next run
+        if row.latitude is not None:
+            event.latitude, event.longitude = row.latitude, row.longitude
+            event.geo_source = "venue"
+            upgraded += 1
+        else:
+            # OSM has no such venue. Keep whatever point we have and stop asking.
+            event.geo_source = "venue-unknown"
+            if event.latitude is None:
+                city = place_for(db, event.city)
+                if city and city.latitude is not None:
+                    event.latitude, event.longitude = city.latitude, city.longitude
+    db.commit()
+    return upgraded
 
 
-def _queries(event: Event) -> list[str]:
-    out = []
-    if event.venue and event.city:
-        out.append(f"{event.venue}, {event.city}")
-    if event.city:
-        out.append(event.city)
-    return out
+# Kept as the old name so callers don't have to change.
+backfill_event_coords = locate_events

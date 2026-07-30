@@ -21,10 +21,12 @@ def _apply(event: Event, concert: ConcertResult) -> None:
     event.in_stock = concert.in_stock
     event.price = concert.price
     event.currency = concert.currency
-    # Only ever set coordinates, never clear them: a later payload that omits geoLocation
-    # must not wipe a position we already resolved.
-    if concert.latitude is not None and concert.longitude is not None:
+    # Eventim's geoLocation is the city centroid, so it must never overwrite a venue point
+    # we geocoded — and a payload that omits geoLocation must not wipe what we have.
+    if (concert.latitude is not None and concert.longitude is not None
+            and event.geo_source not in ("venue", "venue-unknown")):
         event.latitude, event.longitude = concert.latitude, concert.longitude
+        event.geo_source = "eventim-city"
     event.last_checked_at = utcnow()
 
 

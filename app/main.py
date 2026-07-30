@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from .auth import current_user, require_edit, require_owner, require_view, role_of
 from .database import Base, engine, get_db
-from .geocode import backfill_event_coords, city_point
+from .geocode import city_point, locate_events
 from .artist_search import deezer_search, ensure_artist_image
 from .migrate import ensure_columns
 from .models import (
@@ -114,6 +114,7 @@ def _event_dict(e: Event, is_new: bool, attending: bool = False) -> dict:
         "link": e.link,
         "lat": e.latitude,
         "lon": e.longitude,
+        "geo_source": e.geo_source,
         "is_new": is_new,
         "attending": attending,
         "availability": _availability(e),
@@ -549,7 +550,7 @@ def artist_search(q: str = "", limit: int = 8, user: User = Depends(current_user
 @app.post("/api/scrape")
 def trigger_scrape(user: User = Depends(current_user), db: Session = Depends(get_db)):
     found = scrape_all(db)
-    backfill_event_coords(db)  # only touches events Eventim gave no coordinates for
+    locate_events(db)  # upgrades city centroids to real venue positions
     return found
 
 

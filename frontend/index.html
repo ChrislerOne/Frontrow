@@ -89,7 +89,9 @@
     @media (max-width:720px){ .cal-grid,.cal-dow{display:none} .agenda{display:flex} }
 
     /* ── map ────────────────────────────────────────────────── */
-    .map{height:min(62vh,540px);border-radius:var(--r-lg);overflow:hidden;background:var(--raise)}
+    /* position+z-index makes this a stacking context, so Leaflet's panes (z-index 400+)
+       stay inside it instead of painting over the filter popover. */
+    .map{position:relative;z-index:0;height:min(62vh,540px);border-radius:var(--r-lg);overflow:hidden;background:var(--raise)}
     /* Dimmed, never inverted: inverting OSM turns green land into olive mud. */
     .map .leaflet-tile{filter:saturate(.35) brightness(.72)}
     [data-fr-theme="light"] .map .leaflet-tile{filter:saturate(.62) brightness(1.02)}
@@ -856,21 +858,46 @@
               .addTo(state.mapLayer);
           }
         }
+        // One marker per position, not per show. Several dates at the same venue — and
+        // every show in a city that only has a city-level point — would otherwise stack
+        // and hide each other completely.
+        const clusters = new Map();
         for (const e of located) {
-          const cls = e.attending ? "held" : (AVAIL[e.availability] ? "gone" : "");
-          const glyph = e.attending ? "✓" : (AVAIL[e.availability] ? "·" : "•");
-          const price = money(e), av = AVAIL[e.availability], link = safeUrl(e.link);
-          L.marker([e.lat, e.lon], {
-            icon: L.divIcon({ html: `<span class="pin ${cls}">${glyph}</span>`, className: "", iconSize: [24, 24], iconAnchor: [12, 12] }),
-            title: `${e.artist} — ${placeLine(e)}`,
-          }).bindPopup(`<div style="display:flex;flex-direction:column;gap:3px">
-              <b style="font:600 14px/1.2 var(--ui)">${esc(e.artist)}</b>
-              <span class="mono" style="font-size:12px">${esc(dateLine(e.start_date))}</span>
-              <span style="font-size:12px;color:var(--text-dim)">${esc(placeLine(e))}</span>
-              ${price ? `<span class="mono" style="font-size:12px">${esc(price)}</span>` : ""}
-              ${av ? `<span class="tag gone">${esc(av.label)}</span>` : ""}
-              ${e.attending ? `<span class="tag held">✓ ticket bought</span>` : ""}
-              ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener" style="font-size:12px">Open on Eventim ↗</a>` : ""}
+          const key = `${e.lat.toFixed(4)},${e.lon.toFixed(4)}`;
+          if (!clusters.has(key)) clusters.set(key, []);
+          clusters.get(key).push(e);
+        }
+        for (const [, group] of clusters) {
+          group.sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)));
+          const bought = group.filter(e => e.attending).length;
+          const allGone = group.every(e => AVAIL[e.availability]);
+          const cls = bought ? "held" : (allGone ? "gone" : "");
+          const glyph = group.length > 1 ? String(group.length)
+                      : (bought ? "✓" : (allGone ? "·" : "•"));
+          const [{ lat, lon }] = group;
+          const head = group.length > 1
+            ? `<b style="font:600 14px/1.2 var(--ui)">${esc(group[0].city || "This place")} · ${group.length} shows</b>`
+            : `<b style="font:600 14px/1.2 var(--ui)">${esc(group[0].artist)}</b>`;
+          const rows = group.map(e => {
+            const av = AVAIL[e.availability], link = safeUrl(e.link), price = money(e);
+            return `<div style="display:flex;flex-direction:column;gap:1px;padding:6px 0;border-top:1px solid var(--line)">
+              <span style="font:500 13px/1.25 var(--ui)${av ? ";color:var(--text-dim)" : ""}">${esc(e.artist)}${e.attending ? ` <span class="tag held">✓ ticket</span>` : ""}</span>
+              <span class="mono" style="font-size:11.5px;color:var(--text-dim)">${esc(dateLine(e.start_date))} · ${esc(placeLine(e))}</span>
+              <span style="display:flex;gap:8px;align-items:baseline">
+                ${price ? `<span class="mono" style="font-size:11.5px">${esc(price)}</span>` : ""}
+                ${av ? `<span class="tag gone">${esc(av.label)}</span>` : ""}
+                ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener" style="font-size:11.5px;margin-left:auto">Tickets ↗</a>` : ""}
+              </span></div>`;
+          }).join("");
+          // Say so when the pin is only as precise as the city — otherwise it looks like
+          // the venue is in the middle of a roundabout.
+          const cityOnly = group.every(e => e.geo_source !== "venue");
+          L.marker([lat, lon], {
+            icon: L.divIcon({ html: `<span class="pin ${cls}">${esc(glyph)}</span>`, className: "", iconSize: [24, 24], iconAnchor: [12, 12] }),
+            title: group.length > 1 ? `${group.length} shows · ${group[0].city || ""}` : `${group[0].artist} — ${placeLine(group[0])}`,
+          }).bindPopup(`<div style="display:flex;flex-direction:column;gap:2px;min-width:220px;max-height:260px;overflow:auto">
+              ${head}${rows}
+              ${cityOnly ? `<span class="status" style="padding-top:6px">city-level position</span>` : ""}
             </div>`).addTo(state.mapLayer);
         }
         const pts = located.map(e => [e.lat, e.lon]);

@@ -231,13 +231,13 @@ select.input { cursor: pointer; }
 
 /* ── popovers, dialogs, toasts ───────────────────────────────────────────── */
 .pop {
-  position: absolute; z-index: 45;
+  position: absolute; z-index: 500;
   background: var(--raise); border: 1px solid var(--line);
   border-radius: var(--r-lg); box-shadow: var(--sh-3); padding: 16px;
   display: flex; flex-direction: column; gap: 12px;
 }
 .menu {
-  position: absolute; z-index: 45;
+  position: absolute; z-index: 500;
   background: var(--raise); border: 1px solid var(--line);
   border-radius: var(--r-lg); box-shadow: var(--sh-3); padding: 10px;
   display: flex; flex-direction: column; gap: 1px;

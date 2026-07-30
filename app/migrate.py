@@ -27,6 +27,7 @@ NEW_COLUMNS: dict[str, dict[str, str]] = {
         "last_checked_at": "DATETIME",
         "latitude": "FLOAT",
         "longitude": "FLOAT",
+        "geo_source": "VARCHAR",
     },
 }
 

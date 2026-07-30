@@ -1,7 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from .database import SessionLocal
-from .geocode import backfill_event_coords
+from .geocode import locate_events
 from .scraper import scrape_all
 
 scheduler = BackgroundScheduler()
@@ -12,8 +12,8 @@ def _scheduled_scrape() -> None:
     try:
         results = scrape_all(db)
         new_total = sum(results.values())
-        # Eventim covers ~97% of venues; this tops up the rest a few at a time.
-        located = backfill_event_coords(db)
+        # Eventim only gives city centroids, so venues are geocoded a few per cycle.
+        located = locate_events(db)
         print(f"[scheduler] scraped {len(results)} artists, {new_total} new concerts, "
               f"{located} venues located")
     finally:

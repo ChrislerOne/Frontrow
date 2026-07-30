@@ -66,10 +66,15 @@ class Event(Base):
     currency: Mapped[str | None] = mapped_column(String, nullable=True)
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    # Venue position. Eventim supplies this for ~97% of products; the rest are filled in
-    # once from the Place cache and then left alone.
+    # Best known position, plus how precise it is. Eventim's geoLocation turns out to be
+    # the CITY centroid, not the venue — every Berlin show came back on the same point —
+    # so venue precision has to be geocoded separately. geo_source is one of:
+    #   "eventim-city"  — city centroid from the source
+    #   "venue"         — real venue point, geocoded once and cached
+    #   "venue-unknown" — asked OSM for the venue, it doesn't know it; city point stands
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    geo_source: Mapped[str | None] = mapped_column(String, nullable=True)
 
     artist: Mapped["Artist"] = relationship(back_populates="events")
 
