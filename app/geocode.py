@@ -46,7 +46,7 @@ def _throttled_get(params: dict) -> list:
             _last_call = time.monotonic()
 
 
-def place_for(db: Session, query: str, *, country: str = "de", resolve: bool = True) -> Place | None:
+def place_for(db: Session, query: str, *, resolve: bool = True) -> Place | None:
     """Resolve a free-text place, cache-first. Returns the cached row even when it holds
     no coordinates — that's a remembered miss, not a reason to ask again.
 
@@ -63,7 +63,11 @@ def place_for(db: Session, query: str, *, country: str = "de", resolve: bool = T
 
     lat = lon = label = None
     try:
-        hits = _throttled_get({"q": query, "countrycodes": country})
+        # No country restriction. Eventim sells across DE/AT/CH, and pinning the search
+        # to one country doesn't fail — it silently returns the wrong place. "St. Pölten"
+        # with countrycodes=de resolved to a spot in Bavaria, 330 km from the Austrian
+        # city it meant.
+        hits = _throttled_get({"q": query})
         if hits:
             lat, lon = float(hits[0]["lat"]), float(hits[0]["lon"])
             label = hits[0].get("display_name")
@@ -86,10 +90,16 @@ def city_point(db: Session, city: str, *, resolve: bool = True) -> tuple[float, 
 
 def backfill_event_coords(db: Session, limit: int = BACKFILL_PER_RUN) -> int:
     """Fill in coordinates for events Eventim gave none for, most specific query first.
-    Bounded per run so a scrape can't turn into a geocoding marathon."""
+    Bounded per run so a scrape can't turn into a geocoding marathon.
+
+    Only events that have actually been through a scrape (last_checked_at set) are
+    considered. Without that check, adding the coordinate columns made all 69 existing
+    rows look unlocated and the first run burned geocodes on venues Eventim supplies
+    for free on the next scrape."""
     pending = (
         db.query(Event)
         .filter(Event.latitude.is_(None))
+        .filter(Event.last_checked_at.isnot(None))
         .filter((Event.city.isnot(None)) | (Event.venue.isnot(None)))
         .limit(limit)
         .all()

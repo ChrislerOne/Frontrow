@@ -13,7 +13,8 @@ def _event(db, **kw):
     db.add(artist)
     db.commit()
     fields = dict(product_id=f"p{kw.pop('n', 1)}", artist_id=artist.id, name="Show",
-                  start_date=datetime(2027, 5, 1, 20, 0))
+                  start_date=datetime(2027, 5, 1, 20, 0),
+                  last_checked_at=datetime(2026, 7, 30, 12, 0))
     fields.update(kw)
     e = Event(**fields)
     db.add(e)
@@ -131,3 +132,32 @@ def test_events_expose_coordinates_and_me_exposes_the_home_point(client, monkeyp
     monkeypatch.setattr(geocode, "_throttled_get",
                         lambda params: (_ for _ in ()).throw(AssertionError("GET /api/me must not geocode")))
     assert client.get("/api/me", headers=H("a@x.com")).json()["home"]["lat"] == 50.94
+
+
+def test_backfill_ignores_events_that_have_never_been_scraped(session_factory, monkeypatch):
+    """Adding the coordinate columns made every existing row look unlocated; without this
+    guard the first run spent geocodes on venues Eventim supplies for free."""
+    db = session_factory()
+    monkeypatch.setattr(geocode, "_throttled_get",
+                        lambda params: (_ for _ in ()).throw(AssertionError("must not geocode")))
+    e = _event(db, n=30, city="Bremen", venue="Lagerhaus")
+    e.last_checked_at = None
+    db.commit()
+    assert geocode.backfill_event_coords(db) == 0
+    db.close()
+
+
+def test_geocoding_is_not_pinned_to_one_country(session_factory, monkeypatch):
+    """countrycodes=de didn't fail on Austrian venues, it silently returned a German
+    place 330 km away."""
+    db = session_factory()
+    seen = {}
+
+    def fake(params):
+        seen.update(params)
+        return [{"lat": "48.2047", "lon": "15.6256", "display_name": "St. Pölten, Österreich"}]
+
+    monkeypatch.setattr(geocode, "_throttled_get", fake)
+    assert geocode.city_point(db, "St. Pölten") == (48.2047, 15.6256)
+    assert "countrycodes" not in seen
+    db.close()
