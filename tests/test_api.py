@@ -130,11 +130,55 @@ def test_artist_summary_distinguishes_empty_from_sold_out(client, session_factor
     s.close()
 
     arts = {a["name"]: a for a in client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artists"]}
-    assert arts["Bonobo"] == {"id": arts["Bonobo"]["id"], "name": "Bonobo", "event_count": 2,
-                              "sold_out_count": 1, "cancelled_count": 0, "bookable_count": 1,
-                              "checked": True}
+    assert arts["Bonobo"] == {"id": arts["Bonobo"]["id"], "name": "Bonobo", "image": None,
+                              "event_count": 2, "sold_out_count": 1, "cancelled_count": 0,
+                              "bookable_count": 1, "checked": True}
     assert (arts["Checked Nobody"]["event_count"], arts["Checked Nobody"]["checked"]) == (0, True)
     assert (arts["Unchecked Nobody"]["event_count"], arts["Unchecked Nobody"]["checked"]) == (0, False)
+
+
+# ── artist thumbnails ────────────────────────────────────────────────────────
+PIC = "https://cdn-images.dzcdn.net/images/artist/abc/56x56.jpg"
+
+
+def test_adding_an_artist_stores_its_thumbnail(client, monkeypatch):
+    monkeypatch.setattr("app.artist_search.deezer_search",
+                        lambda q, limit=8: [{"name": "Bonobo", "image": PIC}])
+    lid = default_list(client, "a@x.com")["id"]
+    client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
+
+    assert client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artists"][0]["image"] == PIC
+    evs = client.get(f"/api/lists/{lid}/events", headers=H("a@x.com")).json()
+    assert all(e["artist_image"] == PIC for e in evs)  # cards and the share page use this
+
+
+def test_thumbnail_comes_from_the_autocomplete_cache_without_a_deezer_call(client, monkeypatch):
+    """Picking a name from the search bar already cached its picture — reusing it keeps
+    Deezer calls at zero."""
+    calls = {"n": 0}
+
+    def counted(q, limit=8):
+        calls["n"] += 1
+        return [{"name": "Fontaines D.C.", "image": PIC}]
+
+    monkeypatch.setattr("app.main.deezer_search", counted)          # the autocomplete path
+    monkeypatch.setattr("app.artist_search.deezer_search", counted)  # the thumbnail path
+    lid = default_list(client, "a@x.com")["id"]
+
+    client.get("/api/artists/search?q=fontaines", headers=H("a@x.com"))  # one call, cached
+    assert calls["n"] == 1
+    client.post(f"/api/lists/{lid}/artists", json={"name": "Fontaines D.C."}, headers=H("a@x.com"))
+    assert calls["n"] == 1  # served from artist_suggestions
+    assert client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artists"][0]["image"] == PIC
+
+
+def test_artist_without_a_picture_is_still_tracked(client, monkeypatch):
+    monkeypatch.setattr("app.artist_search.deezer_search",
+                        lambda q, limit=8: (_ for _ in ()).throw(RuntimeError("deezer down")))
+    lid = default_list(client, "a@x.com")["id"]
+    r = client.post(f"/api/lists/{lid}/artists", json={"name": "Bonobo"}, headers=H("a@x.com"))
+    assert r.status_code == 200 and r.json()["concerts_found"] == 2
+    assert client.get(f"/api/lists/{lid}", headers=H("a@x.com")).json()["artists"][0]["image"] is None
 
 
 # ── permissions ──────────────────────────────────────────────────────────────

@@ -30,6 +30,8 @@ class Artist(Base):
     # NULL until the first successful scrape. Lets the UI tell "we looked and there's
     # nothing" apart from "we haven't looked yet / the source was blocked".
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Thumbnail from the same catalog that powers the add-artist autocomplete.
+    image: Mapped[str | None] = mapped_column(String, nullable=True)
 
     events: Mapped[list["Event"]] = relationship(
         back_populates="artist", cascade="all, delete-orphan"

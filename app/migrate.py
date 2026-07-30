@@ -11,6 +11,7 @@ from sqlalchemy import Engine
 NEW_COLUMNS: dict[str, dict[str, str]] = {
     "artists": {
         "last_checked_at": "DATETIME",
+        "image": "VARCHAR",
     },
     "events": {
         "status": "VARCHAR",

@@ -59,6 +59,9 @@ def client(session_factory, monkeypatch):
     # The scrape is exercised via both add-artist (app.main) and scrape_all (app.scraper).
     monkeypatch.setattr("app.main.scrape_artist", fake_scrape)
     monkeypatch.setattr("app.scraper.scrape_artist", fake_scrape)
+    # Adding an artist also looks up its thumbnail — keep that off the network by
+    # default. Tests that care about images patch this themselves.
+    monkeypatch.setattr("app.artist_search.deezer_search", lambda q, limit=8: [])
     yield TestClient(app)
     app.dependency_overrides.clear()
 

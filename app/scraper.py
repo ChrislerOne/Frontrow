@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from .adapters.base import ConcertResult
 from .adapters.eventim import EventimAdapter
+from .artist_search import ensure_artist_image
 from .models import Artist, Event, ListArtist, utcnow
 
 adapter = EventimAdapter()
@@ -59,4 +60,5 @@ def scrape_all(db: Session) -> dict[str, int]:
             db.rollback()
             print(f"[scrape] '{artist.name}' failed: {exc}")
             results[artist.name] = 0
+        ensure_artist_image(db, artist)  # backfills thumbnails added before this ran
     return results

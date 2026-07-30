@@ -64,8 +64,10 @@ def test_ensure_columns_upgrades_a_pre_existing_table(tmp_path):
     with engine.begin() as conn:
         conn.exec_driver_sql("CREATE TABLE artists (id INTEGER PRIMARY KEY, name VARCHAR)")
 
-    assert ensure_columns(engine) == ["artists.last_checked_at"]  # events table absent → skipped
+    applied = ensure_columns(engine)
+    assert "artists.last_checked_at" in applied
+    assert not any(c.startswith("events.") for c in applied)  # that table doesn't exist yet
     with engine.begin() as conn:
         cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(artists)")}
-    assert "last_checked_at" in cols
+    assert {"last_checked_at", "image"} <= cols
     assert ensure_columns(engine) == []  # idempotent

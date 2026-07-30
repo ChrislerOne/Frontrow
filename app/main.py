@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from .auth import current_user, require_edit, require_owner, require_view, role_of
 from .database import Base, engine, get_db
-from .artist_search import deezer_search
+from .artist_search import deezer_search, ensure_artist_image
 from .migrate import ensure_columns
 from .models import (
     Artist, ArtistList, ArtistSuggestion, Event, EventAttending, ListArtist, ListInvite,
@@ -84,6 +84,7 @@ def _event_dict(e: Event, is_new: bool, attending: bool = False) -> dict:
         "id": e.id,
         "product_id": e.product_id,
         "artist": e.artist.name,
+        "artist_image": e.artist.image,
         "name": e.name,
         "start_date": e.start_date.isoformat() if e.start_date else None,
         "city": e.city,
@@ -145,6 +146,7 @@ def _artist_summary(a: Artist) -> dict:
     return {
         "id": a.id,
         "name": a.name,
+        "image": a.image,
         "event_count": len(states),
         "sold_out_count": states.count("sold_out"),
         "cancelled_count": states.count("cancelled"),
@@ -249,6 +251,7 @@ def add_artist(list_id: int, payload: NameIn, user: User = Depends(current_user)
     if not db.query(ListArtist).filter_by(list_id=lst.id, artist_id=artist.id).first():
         db.add(ListArtist(list_id=lst.id, artist_id=artist.id))
         db.commit()
+    ensure_artist_image(db, artist)
 
     try:
         found = scrape_artist(db, artist)

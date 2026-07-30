@@ -47,7 +47,8 @@
     .fr-rolechip.owner{border-color:var(--color-accent);color:var(--color-accent)}
     .fr-shrow{display:flex;gap:5.6px;align-items:center;flex-wrap:wrap;padding:7px 8.4px;border-radius:8px;background:var(--color-bg)}
 
-    .fr-artist-row{display:flex;align-items:center;gap:8.4px;padding:8.4px 8.4px 8.4px 11.2px;border-radius:8px;background:var(--color-surface)}
+    .fr-noart{display:grid;place-items:center;background:var(--color-accent-800);color:var(--color-accent-100);font-size:13px}
+    .fr-artist-row{display:flex;align-items:center;gap:8.4px;padding:7px 8.4px;border-radius:8px;background:var(--color-surface)}
     .fr-artist-row:hover{background:var(--color-neutral-800)}
     .fr-artist-name{flex:1;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fr-artist-count{font-family:var(--fr-mono);font-size:11px;color:color-mix(in srgb, var(--color-text) 45%, transparent)}
@@ -292,6 +293,14 @@
       if (e.start_date) { const d = new Date(e.start_date); if (!isNaN(d)) dp = String(d.getDate()).padStart(2,"0") + String(d.getMonth()+1).padStart(2,"0"); }
       return `FR-${dp}-${c}`;
     };
+    // The same thumbnail the search bar shows, reused wherever an artist is named.
+    const artistAvatar = (image, size = 26) => {
+      const box = `width:${size}px;height:${size}px;border-radius:50%;flex:none`;
+      const u = safeUrl(image);
+      return u
+        ? `<img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="${box};object-fit:cover" />`
+        : `<span class="fr-noart" style="${box}"><i class="ph ph-music-notes"></i></span>`;
+    };
     const initials = me => {
       const s = (me && (me.name || me.email)) || "";
       const parts = s.split(/[\s@._-]+/).filter(Boolean);
@@ -501,6 +510,7 @@
       }
       box.innerHTML = `<div style="display:flex;flex-direction:column;gap:2.8px">${arts.map(a => `
         <div class="fr-artist-row">
+          ${artistAvatar(a.image)}
           <span class="fr-artist-name">${esc(a.name)}</span>
           ${artistNote(a)}
           ${canEdit() ? `<button class="btn btn-ghost btn-icon fr-rm" data-id="${a.id}" data-name="${esc(a.name)}" aria-label="Remove artist"><i class="ph ph-trash" style="font-size:15px"></i></button>` : ""}
@@ -569,6 +579,7 @@
         return `<div class="fr-group">
           <button class="fr-group-head" data-artist="${esc(g.artist)}" aria-expanded="${open}">
             <i class="ph ph-caret-${open ? "down" : "right"}"></i>
+            ${artistAvatar(g.events[0].artist_image, 28)}
             <span class="fr-group-name">${esc(g.artist)}</span>
             <span class="fr-group-count">${esc(bits.join(" · "))}</span>
             <span class="fr-group-next">${g.next ? "NEXT · " + esc(shortDate(g.next)) : "DATE TBA"}</span>
@@ -863,7 +874,7 @@
       if (!items.length) { closeSuggest(); return; }
       suggBox.innerHTML = items.map(it => `
         <button type="button" class="fr-menu-item" data-name="${esc(it.name)}">
-          ${it.image ? `<img src="${esc(it.image)}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none" />` : '<i class="ph ph-music-notes" style="color:var(--color-accent)"></i>'}
+          ${artistAvatar(it.image, 22)}
           <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</span>
         </button>`).join("");
       suggBox.querySelectorAll("[data-name]").forEach(b => b.onmousedown = e => {
